@@ -35,7 +35,7 @@ function aniDevApiPlugin(apiKey?: string) {
             'Access-Control-Allow-Origin': '*'
           });
           res.end(JSON.stringify({
-            error: 'GEMINI_API_KEY is not configured in the server environment. Please add it to your environment variables.',
+            error: 'The required environment variable is missing: GEMINI_API_KEY',
             status: 'unconfigured'
           }));
           return;

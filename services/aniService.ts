@@ -116,8 +116,9 @@ export const aniService = {
       }
       throw new Error('EMPTY_RESPONSE');
     } catch (error: any) {
-      console.warn("Ani AI gateway unreachable or offline:", error.message);
-      throw new Error("Couldn't reach Ani right now. Check the connection and try again.");
+      console.error("[AniService] API call failed:", error);
+      // DO NOT mask the error. Pass the actual server/provider error to the UI.
+      throw error;
     }
   }
 };
