@@ -476,7 +476,7 @@ const SaplingAppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto border-x-2 border-green-950/30 bg-[#040a04] relative shadow-2xl overflow-hidden">
+    <div className="h-screen h-[100dvh] flex flex-col max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto border-x-2 border-green-950/30 bg-[#040a04] relative shadow-2xl overflow-hidden">
       <header className="px-4 py-3.5 sm:px-6 sm:py-4 md:px-8 md:py-5 border-b-2 border-green-950/20 flex justify-between items-center bg-[#040a04]/95 backdrop-blur-md sticky top-0 z-[60] pt-safe">
         <div className="flex items-center gap-3 sm:gap-4">
           <SaplingLogo />
@@ -505,7 +505,7 @@ const SaplingAppContent: React.FC = () => {
         </div>
       </header>
 
-      <main id="main-content" className="flex-1 overflow-y-auto pb-28 sm:pb-32 pb-safe">
+      <main id="main-content" className="flex-1 overflow-y-auto pb-28 sm:pb-32">
         {activeTab === 'grove' && renderGrove()}
         {activeTab === 'tasks' && renderTasks()}
         {activeTab === 'logs' && renderLogs()}
