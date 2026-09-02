@@ -80,6 +80,68 @@ export default async function handler(req: any, res: any) {
 
     const systemInstruction = ANI_SYSTEM_PROMPT + contextString;
 
+    // Check if using OpenRouter key
+    if (apiKey.startsWith('sk-or-')) {
+      console.log("[ANI API] Detected OpenRouter API key. Routing via OpenRouter...");
+      
+      const orMessages = [
+        { role: 'system', content: systemInstruction }
+      ];
+
+      for (const msg of messages) {
+        // Only user and assistant roles allowed in standard OpenAI format
+        const role = msg.role === 'model' ? 'assistant' : 'user';
+        const content: any[] = [];
+        
+        for (const p of msg.parts) {
+          if (p.text) content.push({ type: 'text', text: p.text });
+          if (p.inlineData) content.push({ 
+            type: 'image_url', 
+            image_url: { url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}` } 
+          });
+        }
+        
+        // Skip leading assistant messages as per usual strictness, though OR is more forgiving
+        if (orMessages.length === 1 && role === 'assistant') continue;
+        
+        orMessages.push({ role, content });
+      }
+
+      console.log("[ANI API] Provider request started to OpenRouter (google/gemini-2.5-flash)...");
+      const orResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": "https://sapling.local", // Optional, for including your app on openrouter.ai rankings.
+          "X-Title": "Sapling Groove", // Optional. Shows in rankings on openrouter.ai.
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: orMessages,
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      if (!orResponse.ok) {
+        const errText = await orResponse.text();
+        throw new Error(`OpenRouter Error: ${orResponse.status} ${errText}`);
+      }
+
+      const orData = await orResponse.json();
+      console.log("[ANI API] Provider response received successfully.");
+      
+      return res.status(200).json({
+        text: orData.choices[0]?.message?.content || "The leaves rustle quietly in the grove.",
+        status: 'ok',
+        model: 'gemini-2.5-flash (via OpenRouter)'
+      });
+    }
+
+    // Native Gemini flow
+    const ai = new GoogleGenAI({ apiKey });
+
     // Convert messages for gemini-2.5-flash
     let formattedContents = messages.map((msg: any) => ({
       role: msg.role === 'model' ? 'model' : 'user',

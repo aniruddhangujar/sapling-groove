@@ -72,6 +72,69 @@ Speak with gentle grounding, concise answers (1-3 short paragraphs), and subtle 
 Never sound corporate, cheerleader-like, or robotic.
 When asked about goals or stats, reference their actual provided Grove context.` + contextString;
 
+            // Check if using OpenRouter key
+            if (key.startsWith('sk-or-')) {
+              console.log("[ANI API DEV] Detected OpenRouter API key. Routing via OpenRouter...");
+              
+              const orMessages = [
+                { role: 'system', content: systemInstruction }
+              ];
+
+              for (const msg of messages) {
+                const role = msg.role === 'model' ? 'assistant' : 'user';
+                const content: any[] = [];
+                
+                for (const p of msg.parts) {
+                  if (p.text) content.push({ type: 'text', text: p.text });
+                  if (p.inlineData) content.push({ 
+                    type: 'image_url', 
+                    image_url: { url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}` } 
+                  });
+                }
+                
+                if (orMessages.length === 1 && role === 'assistant') continue;
+                
+                orMessages.push({ role, content });
+              }
+
+              console.log("[ANI API DEV] Provider request started to OpenRouter (google/gemini-2.5-flash)...");
+              const orResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${key}`,
+                  "HTTP-Referer": "https://sapling.local",
+                  "X-Title": "Sapling Groove",
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  model: "google/gemini-2.5-flash",
+                  messages: orMessages,
+                  temperature: 0.7,
+                  max_tokens: 500
+                })
+              });
+
+              if (!orResponse.ok) {
+                const errText = await orResponse.text();
+                throw new Error(`OpenRouter Error: ${orResponse.status} ${errText}`);
+              }
+
+              const orData = await orResponse.json();
+              console.log("[ANI API DEV] Provider response received successfully.");
+              
+              res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+              });
+              res.end(JSON.stringify({
+                text: orData.choices[0]?.message?.content || "The leaves rustle quietly in the grove.",
+                status: 'ok',
+                model: 'gemini-2.5-flash (via OpenRouter)'
+              }));
+              return;
+            }
+
+            // Native Gemini flow
             let formattedContents = messages.map((msg: any) => ({
               role: msg.role === 'model' ? 'model' : 'user',
               parts: msg.parts.map((p: any) => {
