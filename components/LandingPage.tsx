@@ -166,15 +166,15 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
       <div ref={particlesRef} className="fixed inset-0 pointer-events-none z-10 overflow-hidden" />
 
       {/* TOP MINIMAL NAVIGATION */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#040a04]/90 backdrop-blur-md border-b border-green-900/40 px-4 sm:px-8 py-3.5 flex justify-between items-center transition-all pt-safe">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#061206] border border-green-500/60 flex items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-green-400">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#040a04]/95 backdrop-blur-md border-b border-green-900/40 px-3 xs:px-4 sm:px-8 py-2.5 sm:py-3.5 flex justify-between items-center transition-all pt-safe">
+        <div className="flex items-center gap-2 xs:gap-3 shrink-0">
+          <div className="w-7 h-7 xs:w-8 xs:h-8 bg-[#061206] border border-green-500/60 flex items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-green-400">
               <path d="M12 21V9M12 9C12 9 8 5 4 5C4 5 4 8 8 11M12 9C12 9 16 5 20 5C20 5 20 8 16 11" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round"/>
               <circle cx="12" cy="7" r="1.5" fill="#4ade80" />
             </svg>
           </div>
-          <span className="pixel-font text-base sm:text-lg text-white uppercase tracking-wider font-bold">
+          <span className="pixel-font text-sm xs:text-base sm:text-lg text-white uppercase tracking-wider font-bold">
             SAPLING
           </span>
         </div>
@@ -188,19 +188,23 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
           <a href="#philosophy" className="hover:text-green-300 transition-colors uppercase tracking-widest">MANIFESTO</a>
         </nav>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right Actions — Responsive & Single-line on all phones */}
+        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0">
           <button
             onClick={onOpenAuth}
-            className="px-3 py-2 border border-green-900/60 bg-[#061406] hover:border-green-600 hover:text-green-200 text-green-400 pixel-font text-[8px] sm:text-[9px] uppercase tracking-wider transition-all min-h-[38px] shadow-sm"
+            className="px-2.5 xs:px-3 py-1.5 sm:py-2 border border-green-900/70 bg-[#061406] hover:border-green-600 hover:text-green-200 text-green-400 pixel-font text-[7.5px] xs:text-[8px] sm:text-[9px] uppercase tracking-wider transition-all min-h-[36px] sm:min-h-[38px] shadow-sm whitespace-nowrap"
           >
-            {isAuthenticated ? `[ ${user?.displayName?.split(' ')[0] || 'USER'} ]` : '[ TERMINAL LOGIN ]'}
+            {isAuthenticated 
+              ? `[ ${user?.displayName?.split(' ')[0] || 'USER'} ]` 
+              : <span className="hidden sm:inline">[ TERMINAL LOGIN ]</span>}
+            {!isAuthenticated && <span className="sm:hidden">[ LOGIN ]</span>}
           </button>
           <button
             onClick={() => onEnterApp()}
-            className="px-3.5 sm:px-4 py-2 bg-green-500 hover:bg-green-400 border border-green-600 text-black pixel-font text-[8px] sm:text-[9px] uppercase tracking-wider font-bold transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] min-h-[38px]"
+            className="px-2.5 xs:px-3.5 sm:px-4 py-1.5 sm:py-2 bg-green-500 hover:bg-green-400 border border-green-600 text-black pixel-font text-[7.5px] xs:text-[8px] sm:text-[9px] uppercase tracking-wider font-bold transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] min-h-[36px] sm:min-h-[38px] whitespace-nowrap"
           >
-            [ ENTER GROVE ]
+            <span className="hidden xs:inline">[ ENTER GROVE ]</span>
+            <span className="xs:hidden">[ GROVE ]</span>
           </button>
         </div>
       </header>
@@ -208,11 +212,11 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
       {/* SECTION 1: HERO VIEWPORT */}
       <section 
         id="hero" 
-        className="min-h-[100svh] w-full flex flex-col items-center justify-center px-4 sm:px-8 relative border-b border-green-900/30 pt-24 pb-16 hud-grid"
+        className="min-h-[92svh] sm:min-h-[100svh] w-full flex flex-col items-center justify-center px-4 sm:px-8 relative border-b border-green-900/30 pt-16 xs:pt-20 sm:pt-28 pb-12 sm:pb-16 hud-grid"
       >
-        <div className="max-w-4xl w-full mx-auto flex flex-col items-center text-center space-y-6 z-20">
+        <div className="max-w-4xl w-full mx-auto flex flex-col items-center text-center space-y-4 sm:space-y-6 z-20">
           {/* Terminal Indicators */}
-          <div className="flex flex-wrap justify-center items-center gap-2 text-[7.5px] sm:text-[8.5px] pixel-font text-green-400 font-bold bg-[#061406]/90 border border-green-900/60 px-3 py-1.5 pixel-corners shadow-sm">
+          <div className="flex flex-wrap justify-center items-center gap-2 text-[7px] xs:text-[7.5px] sm:text-[8.5px] pixel-font text-green-400 font-bold bg-[#061406]/90 border border-green-900/60 px-3 py-1.5 pixel-corners shadow-sm">
             <span className="flex items-center gap-1.5 text-green-400">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               SYSTEM ONLINE
@@ -222,7 +226,7 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
           </div>
 
           {/* Substantial Living Central Visual */}
-          <div className="relative w-64 xs:w-72 sm:w-80 md:w-96 aspect-square flex items-center justify-center bg-[#061406]/80 border-2 border-green-950/80 shadow-[0_0_60px_rgba(34,197,94,0.15)] my-2 overflow-hidden p-4">
+          <div className="relative w-56 xs:w-64 sm:w-80 md:w-96 aspect-square flex items-center justify-center bg-[#061406]/80 border-2 border-green-950/80 shadow-[0_0_60px_rgba(34,197,94,0.15)] my-1 sm:my-2 overflow-hidden p-3 sm:p-4">
             <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-green-500/50" />
             <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b-2 border-r-2 border-green-500/50" />
 
@@ -230,35 +234,35 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
               <SaplingCanvas goal={heroGoal} size={280} animate={true} />
             </div>
 
-            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[7px] pixel-font text-green-500/80 bg-[#040a04]/90 px-2 py-1 border border-green-900/40">
+            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[6.5px] sm:text-[7px] pixel-font text-green-500/80 bg-[#040a04]/90 px-2 py-1 border border-green-900/40">
               <span>PINE SEEDLING // GEN 0</span>
               <span className="text-green-400 font-bold">LIVE SYNC</span>
             </div>
           </div>
 
           {/* Headlines & Copy */}
-          <div className="space-y-3 max-w-2xl mx-auto">
-            <h1 className="pixel-font text-2xl xs:text-3xl sm:text-4xl md:text-5xl text-white tracking-tight uppercase leading-tight drop-shadow-[0_0_20px_rgba(34,197,94,0.25)]">
+          <div className="space-y-2.5 sm:space-y-3 max-w-2xl mx-auto">
+            <h1 className="pixel-font text-xl xs:text-2xl sm:text-4xl md:text-5xl text-white tracking-tight uppercase leading-tight drop-shadow-[0_0_20px_rgba(34,197,94,0.25)]">
               YOUR ATTENTION<br />IS A SEED.
             </h1>
-            <p className="text-sm sm:text-base md:text-lg text-green-300/90 font-serif italic max-w-lg mx-auto leading-relaxed">
+            <p className="text-xs sm:text-base md:text-lg text-green-300/90 font-serif italic max-w-lg mx-auto leading-relaxed px-2">
               Plant an intention. Focus on what matters. Watch your discipline grow into a living digital forest.
             </p>
           </div>
 
           {/* Call to Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full max-w-md pt-2">
+          <div className="flex flex-col xs:flex-row gap-2.5 sm:gap-4 w-full max-w-md pt-1 sm:pt-2">
             <PixelButton
               onClick={() => onEnterApp({ openNewSeed: true })}
               variant="success"
-              className="flex-1 py-4 text-[10px] sm:text-[11px] tracking-widest shadow-[0_0_25px_rgba(34,197,94,0.35)] h-13"
+              className="flex-1 py-3.5 sm:py-4 text-[9px] xs:text-[9.5px] sm:text-[11px] tracking-widest shadow-[0_0_25px_rgba(34,197,94,0.35)] h-12 sm:h-13"
             >
               [ PLANT YOUR SEED ]
             </PixelButton>
             <PixelButton
               onClick={() => onEnterApp()}
               variant="primary"
-              className="flex-1 py-4 text-[10px] sm:text-[11px] tracking-widest h-13"
+              className="flex-1 py-3.5 sm:py-4 text-[9px] xs:text-[9.5px] sm:text-[11px] tracking-widest h-12 sm:h-13"
             >
               [ EXPLORE THE GROVE ]
             </PixelButton>
@@ -266,20 +270,20 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
         </div>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-green-500/60 pixel-font text-[7px] uppercase tracking-widest pointer-events-none">
+        <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-green-500/60 pixel-font text-[6.5px] sm:text-[7px] uppercase tracking-widest pointer-events-none">
           <span>SCROLL TO NURTURE</span>
           <span className="text-xs animate-bounce">↓</span>
         </div>
       </section>
 
       {/* SECTION 2: THE GROWTH METAPHOR / SCROLL STORY */}
-      <section id="growth" className="py-20 sm:py-28 px-4 sm:px-8 border-b border-green-900/30 bg-[#050c05] relative">
-        <div className="max-w-5xl mx-auto space-y-12">
+      <section id="growth" className="py-16 sm:py-28 px-4 sm:px-8 border-b border-green-900/30 bg-[#050c05] relative">
+        <div className="max-w-5xl mx-auto space-y-8 sm:space-y-12">
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <span className="pixel-font text-[8px] sm:text-[9px] text-green-400 uppercase tracking-widest font-bold">
               &gt; THE_GROWTH_CYCLE
             </span>
-            <h2 className="pixel-font text-xl xs:text-2xl sm:text-3xl text-white uppercase tracking-tight">
+            <h2 className="pixel-font text-lg xs:text-xl sm:text-3xl text-white uppercase tracking-tight">
               FOCUS GIVES IT ENERGY.
             </h2>
             <p className="text-xs sm:text-sm md:text-base text-green-300/80 font-serif italic">
@@ -288,21 +292,21 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
           </div>
 
           {/* Interactive Growth Evolution Showcase */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-[#081408] border-2 border-green-950/80 p-6 sm:p-8 pixel-corners shadow-2xl">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-center bg-[#081408] border-2 border-green-950/80 p-4 sm:p-8 pixel-corners shadow-2xl">
             {/* Left: Canvas Viewport */}
             <div className="md:col-span-6 flex flex-col items-center justify-center">
-              <div className="w-56 xs:w-64 sm:w-72 aspect-square bg-[#040a04] border border-green-900/50 flex items-center justify-center p-3 relative shadow-inner">
+              <div className="w-52 xs:w-60 sm:w-72 aspect-square bg-[#040a04] border border-green-900/50 flex items-center justify-center p-3 relative shadow-inner">
                 <SaplingCanvas goal={stageGoal} size={240} animate={true} />
               </div>
-              <div className="mt-3 pixel-font text-[8px] sm:text-[9px] text-green-400 font-bold uppercase tracking-wider">
+              <div className="mt-3 pixel-font text-[7.5px] sm:text-[9px] text-green-400 font-bold uppercase tracking-wider text-center">
                 STAGE: {['SEEDLING (0%)', 'SPROUT (25%)', 'SAPLING (50%)', 'MATURING (85%)', 'MATURE GROVE (100%)'][growthStageIndex]}
               </div>
             </div>
 
             {/* Right: Stage Selector & Philosophy */}
-            <div className="md:col-span-6 space-y-6">
+            <div className="md:col-span-6 space-y-5 sm:space-y-6">
               <div className="space-y-2">
-                <h3 className="pixel-font text-base sm:text-lg text-zinc-100 uppercase tracking-tight">
+                <h3 className="pixel-font text-sm sm:text-lg text-zinc-100 uppercase tracking-tight">
                   From Silent Seed to Mighty Oak
                 </h3>
                 <p className="text-xs sm:text-sm text-green-200/90 font-mono leading-relaxed">
@@ -310,13 +314,13 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
                 </p>
               </div>
 
-              {/* Stage Buttons */}
-              <div className="grid grid-cols-5 gap-1.5 pt-2">
+              {/* Stage Buttons — Touch-scrollable on mobile, grid on desktop */}
+              <div className="flex sm:grid sm:grid-cols-5 gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1.5 pt-1 -mx-1 px-1">
                 {['SEED', 'SPROUT', 'SAPLING', 'TREE', 'GROVE'].map((stg, idx) => (
                   <button
                     key={stg}
                     onClick={() => setGrowthStageIndex(idx)}
-                    className={`py-2 px-1 text-center pixel-font text-[7px] sm:text-[8px] uppercase tracking-wider border transition-all ${
+                    className={`py-2 px-3 sm:px-1 min-w-[70px] sm:min-w-0 shrink-0 text-center pixel-font text-[7.5px] sm:text-[8px] uppercase tracking-wider border transition-all ${
                       growthStageIndex === idx
                         ? 'border-green-400 bg-green-500/20 text-white font-bold shadow-[0_0_10px_rgba(34,197,94,0.3)]'
                         : 'border-green-950 bg-[#050c05] text-green-500 hover:border-green-800'
@@ -327,7 +331,7 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
                 ))}
               </div>
 
-              <div className="p-3 bg-[#040a04] border border-green-950 flex justify-between items-center text-[8px] pixel-font text-green-400">
+              <div className="p-2.5 sm:p-3 bg-[#040a04] border border-green-950 flex justify-between items-center text-[7.5px] sm:text-[8px] pixel-font text-green-400">
                 <span>ESTIMATED SYNTHESIS:</span>
                 <span className="font-bold text-white">{[0, 6, 12, 21, 25][growthStageIndex]} MIN ACCRUED</span>
               </div>

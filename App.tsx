@@ -281,20 +281,20 @@ const SaplingAppContent: React.FC = () => {
     };
 
     return (
-      <div className="p-4 sm:p-6 md:p-10 flex flex-col h-full space-y-6 sm:space-y-8 animate-in fade-in duration-700 hud-grid max-w-xl mx-auto justify-between">
-        <div className="text-center space-y-3">
-           <h1 className="pixel-font text-lg xs:text-xl sm:text-2xl md:text-3xl text-white uppercase tracking-[0.25em] sm:tracking-[0.4em]">
+      <div className="p-3.5 sm:p-6 md:p-10 flex flex-col h-full space-y-4 sm:space-y-6 animate-in fade-in duration-700 hud-grid max-w-xl mx-auto justify-between">
+        <div className="text-center space-y-2 sm:space-y-3">
+           <h1 className="pixel-font text-base xs:text-lg sm:text-2xl md:text-3xl text-white uppercase tracking-[0.2em] sm:tracking-[0.4em]">
              Pomo Utility
            </h1>
-           <p className="text-green-400 text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-bold">
+           <p className="text-green-400 text-[7.5px] sm:text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">
              {utilityMode === 'chronos' ? 'Structured Countdown Ritual' : 'Free-Form Elapsed Focus'}
            </p>
            
-           <div className="flex justify-center gap-2 pt-2">
+           <div className="flex justify-center gap-2 pt-1 sm:pt-2">
               <button 
                 type="button"
                 onClick={() => setUtilityMode('chronos')}
-                className={`px-5 sm:px-8 py-2.5 sm:py-3 border-2 pixel-font text-[8px] sm:text-[9px] uppercase tracking-widest transition-all min-h-[44px] ${
+                className={`px-4 xs:px-5 sm:px-8 py-2 sm:py-3 border-2 pixel-font text-[7.5px] sm:text-[9px] uppercase tracking-widest transition-all min-h-[40px] sm:min-h-[44px] ${
                   utilityMode === 'chronos' 
                     ? 'border-green-400 bg-green-950/50 text-white shadow-[0_0_20px_rgba(34,197,94,0.25)] font-bold' 
                     : 'border-green-800/60 bg-[#061406] text-green-400 hover:text-green-200 hover:border-green-600'
@@ -305,7 +305,7 @@ const SaplingAppContent: React.FC = () => {
               <button 
                 type="button"
                 onClick={() => setUtilityMode('groove')}
-                className={`px-5 sm:px-8 py-2.5 sm:py-3 border-2 pixel-font text-[8px] sm:text-[9px] uppercase tracking-widest transition-all min-h-[44px] ${
+                className={`px-4 xs:px-5 sm:px-8 py-2 sm:py-3 border-2 pixel-font text-[7.5px] sm:text-[9px] uppercase tracking-widest transition-all min-h-[40px] sm:min-h-[44px] ${
                   utilityMode === 'groove' 
                     ? 'border-green-400 bg-green-950/50 text-white shadow-[0_0_20px_rgba(34,197,94,0.25)] font-bold' 
                     : 'border-green-800/60 bg-[#061406] text-green-400 hover:text-green-200 hover:border-green-600'
@@ -317,8 +317,8 @@ const SaplingAppContent: React.FC = () => {
         </div>
 
         {/* Comfortable Spacing for Circular Timer Viewport */}
-        <div className="relative flex flex-col items-center justify-center my-auto py-2">
-           <div className="relative w-64 xs:w-72 sm:w-80 h-64 xs:h-72 sm:h-80 flex items-center justify-center bg-[#061206]/70 border-2 border-green-950/60 shadow-2xl group overflow-hidden p-4 sm:p-6">
+        <div className="relative flex flex-col items-center justify-center my-auto py-1 sm:py-2">
+           <div className="relative w-56 xs:w-64 sm:w-76 h-56 xs:h-64 sm:h-76 flex items-center justify-center bg-[#061206]/70 border-2 border-green-950/60 shadow-2xl group overflow-hidden p-3 sm:p-6">
               <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-green-500/50 group-hover:border-green-400 transition-all z-20" />
               <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b-2 border-r-2 border-green-500/50 group-hover:border-green-400 transition-all z-20" />
 
@@ -336,26 +336,26 @@ const SaplingAppContent: React.FC = () => {
                         />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <h2 className="pixel-font text-4xl sm:text-5xl text-white select-none tracking-tighter leading-none shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+                        <h2 className="pixel-font text-3xl xs:text-4xl sm:text-5xl text-white select-none tracking-tighter leading-none shadow-[0_0_10px_rgba(0,0,0,0.5)]">
                           25:00
                         </h2>
-                        <span className="pixel-font text-[7.5px] sm:text-[8px] text-green-400 uppercase mt-4 sm:mt-5 tracking-[0.3em] font-bold">
+                        <span className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase mt-3 sm:mt-5 tracking-[0.25em] font-bold">
                           Countdown Ready
                         </span>
                       </div>
                    </div>
                 </div>
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-between p-4 bg-[#040a04] animate-in zoom-in-95 fade-in duration-300">
-                  <div className="z-20 px-3 py-1 bg-[#050c05]/95 border border-green-800/70 pixel-corners shadow-md flex items-center gap-2 mt-2">
+                <div className="absolute inset-0 flex flex-col items-center justify-between p-3 sm:p-4 bg-[#040a04] animate-in zoom-in-95 fade-in duration-300">
+                  <div className="z-20 px-2.5 py-1 bg-[#050c05]/95 border border-green-800/70 pixel-corners shadow-md flex items-center gap-2 mt-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    <span className="pixel-font text-base sm:text-lg text-white tracking-tight">00:00 → ∞</span>
+                    <span className="pixel-font text-sm xs:text-base sm:text-lg text-white tracking-tight">00:00 → ∞</span>
                   </div>
                   <div className="relative flex items-center justify-center flex-1 my-auto">
-                    <SaplingCanvas goal={dummyGoal} size={200} />
+                    <SaplingCanvas goal={dummyGoal} size={180} />
                   </div>
                   <div className="z-20 text-center mb-1">
-                    <span className="pixel-font text-[7.5px] sm:text-[8px] text-green-400 uppercase tracking-[0.25em] font-bold">
+                    <span className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase tracking-[0.2em] font-bold">
                       Free-Form Growth
                     </span>
                   </div>
@@ -367,7 +367,7 @@ const SaplingAppContent: React.FC = () => {
         <PixelButton 
           onClick={startUtilityRitual} 
           variant="success"
-          className="w-full py-5 sm:py-6 text-xs sm:text-sm border-2 tracking-[0.3em] sm:tracking-[0.5em] uppercase shadow-[0_10px_40px_rgba(34,197,94,0.2)] h-14"
+          className="w-full py-4 sm:py-5 text-[10px] sm:text-xs border-2 tracking-[0.25em] sm:tracking-[0.4em] uppercase shadow-[0_10px_40px_rgba(34,197,94,0.2)] h-12 sm:h-14"
         >
           {utilityMode === 'chronos' ? 'BEGIN CYCLE' : 'COMMENCE GROOVE'}
         </PixelButton>
