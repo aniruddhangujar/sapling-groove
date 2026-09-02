@@ -24,6 +24,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
   
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ base64: string; mimeType: string } | null>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -58,6 +59,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
     const trimmed = input.trim();
     if ((!trimmed && !selectedImage) || isLoading) return;
 
+    setError(null);
     const currentParts: ChatMessage['parts'] = [];
     if (selectedImage) {
       currentParts.push({ inlineData: { mimeType: selectedImage.mimeType, data: selectedImage.base64 } });
@@ -70,6 +72,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput('');
+    const previousImage = selectedImage;
     setSelectedImage(null);
     setIsLoading(true);
 
@@ -79,11 +82,12 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
         role: 'model',
         parts: [{ text: response.text }]
       }]);
-    } catch (error: any) {
-      setMessages(prev => [...prev, {
-        role: 'model',
-        parts: [{ text: "The garden is still for a moment. Steady your breath and try again." }]
-      }]);
+    } catch (err: any) {
+      // Revert optimistic update and allow retry
+      setMessages(messages);
+      setInput(trimmed);
+      setSelectedImage(previousImage);
+      setError(err.message || "Couldn't reach Ani right now. Check the connection and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -204,6 +208,15 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
 
       {/* Input Bar Overlay — Fully Mobile Optimized */}
       <div className="p-2 sm:p-3 border-t-2 border-green-950/60 bg-[#040a04]/98 backdrop-blur-md z-10 shrink-0 pb-safe">
+        {error && (
+          <div className="mb-2.5 p-2 bg-red-950/40 border border-red-900/60 flex items-center justify-between animate-in fade-in zoom-in-95 duration-200 rounded-sm">
+            <span className="pixel-font text-[8px] sm:text-[9px] text-red-400 uppercase tracking-widest leading-relaxed">
+              {error}
+            </span>
+            <button onClick={() => setError(null)} className="text-red-500 hover:text-red-300 ml-3 text-lg leading-none" aria-label="Dismiss error">×</button>
+          </div>
+        )}
+        
         {selectedImage && (
           <div className="mb-2 relative inline-block animate-in zoom-in duration-200">
             <img 

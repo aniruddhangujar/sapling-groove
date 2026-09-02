@@ -75,7 +75,7 @@ export default async function handler(req: any, res: any) {
     const systemInstruction = ANI_SYSTEM_PROMPT + contextString;
 
     // Convert messages for gemini-2.5-flash
-    const formattedContents = messages.map((msg: any) => ({
+    let formattedContents = messages.map((msg: any) => ({
       role: msg.role === 'model' ? 'model' : 'user',
       parts: msg.parts.map((p: any) => {
         if (p.text) return { text: p.text };
@@ -83,6 +83,14 @@ export default async function handler(req: any, res: any) {
         return { text: '' };
       })
     }));
+
+    // Gemini API requires the first message to be from the 'user'.
+    // If the history starts with a 'model' greeting, shift it out or prepend a dummy user message.
+    // It is safer to drop leading model messages until we find a user message.
+    while (formattedContents.length > 0 && formattedContents[0].role === 'model') {
+      formattedContents.shift();
+    }
+
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
