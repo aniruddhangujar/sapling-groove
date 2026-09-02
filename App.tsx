@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { SaplingGoal, UserProfile, TimelineType, TreeType, AppTab, PomoVisualMode, FocusMode, FocusSessionLog, AppViewMode } from './types';
 import PixelButton from './components/PixelButton';
 import SaplingCanvas from './components/SaplingCanvas';
-import GoalModal from './components/GoalModal';
-import FocusSession from './components/FocusSession';
-import AniChat from './components/AniChat';
-import SanctuaryModal from './components/SanctuaryModal';
 import LandingPage from './components/LandingPage';
-import AuthModal from './components/AuthModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { storageService } from './services/storageService';
+
+// Lazy-loaded App Modules (Loaded on-demand to keep landing page bundle ultra-lean)
+const GoalModal = lazy(() => import('./components/GoalModal'));
+const FocusSession = lazy(() => import('./components/FocusSession'));
+const AniChat = lazy(() => import('./components/AniChat'));
+const SanctuaryModal = lazy(() => import('./components/SanctuaryModal'));
+const AuthModal = lazy(() => import('./components/AuthModal'));
 
 const SaplingLogo: React.FC = () => (
   <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#061206] border-2 border-green-800/40 flex items-center justify-center relative shadow-[0_0_20px_rgba(34,197,94,0.15)] overflow-hidden shrink-0">
@@ -135,10 +137,12 @@ const SaplingAppContent: React.FC = () => {
           onOpenAuth={() => setShowAuthModal(true)} 
         />
         {showAuthModal && (
-          <AuthModal 
-            onClose={() => setShowAuthModal(false)} 
-            onSuccess={() => navigateToApp()} 
-          />
+          <Suspense fallback={null}>
+            <AuthModal 
+              onClose={() => setShowAuthModal(false)} 
+              onSuccess={() => navigateToApp()} 
+            />
+          </Suspense>
         )}
       </>
     );
@@ -505,7 +509,18 @@ const SaplingAppContent: React.FC = () => {
         {activeTab === 'grove' && renderGrove()}
         {activeTab === 'tasks' && renderTasks()}
         {activeTab === 'logs' && renderLogs()}
-        {activeTab === 'ani' && <AniChat profile={profile} activeSessionGoal={activeSessionGoal} />}
+        {activeTab === 'ani' && (
+          <Suspense fallback={
+            <div className="p-8 sm:p-14 text-center border-2 border-green-950/60 bg-[#061206]/50 max-w-md mx-auto my-12 animate-pulse">
+              <span className="w-2 h-2 inline-block bg-green-400 mr-2 animate-ping" />
+              <span className="pixel-font text-[9px] text-green-400 uppercase tracking-widest font-bold">
+                CONNECTING TO ANI SATELLITE...
+              </span>
+            </div>
+          }>
+            <AniChat profile={profile} activeSessionGoal={activeSessionGoal} />
+          </Suspense>
+        )}
       </main>
 
       {/* BOTTOM NAVIGATION WITH CLEAR, CONTRAST-ENHANCED VISIBILITY */}
@@ -547,28 +562,30 @@ const SaplingAppContent: React.FC = () => {
         })}
       </nav>
 
-      {showGoalModal && <GoalModal onClose={() => setShowGoalModal(false)} onSubmit={addGoal} />}
-      {showSanctuaryModal && (
-        <SanctuaryModal 
-          onClose={() => setShowSanctuaryModal(false)} 
-          onUnlock={() => setProfile(prev => ({ ...prev, isPremium: true }))} 
-        />
-      )}
-      {showAuthModal && (
-        <AuthModal 
-          onClose={() => setShowAuthModal(false)} 
-        />
-      )}
-      
-      {activeSessionGoal && (
-        <FocusSession 
-          goal={activeSessionGoal === 'pomodoro' ? null : activeSessionGoal}
-          mode={sessionMode}
-          visualMode={activeSessionGoal === 'pomodoro' ? pomoVisualMode : 'tree'}
-          onFinish={handleFocusFinish}
-          onCancel={() => setActiveSessionGoal(null)}
-        />
-      )}
+      <Suspense fallback={null}>
+        {showGoalModal && <GoalModal onClose={() => setShowGoalModal(false)} onSubmit={addGoal} />}
+        {showSanctuaryModal && (
+          <SanctuaryModal 
+            onClose={() => setShowSanctuaryModal(false)} 
+            onUnlock={() => setProfile(prev => ({ ...prev, isPremium: true }))} 
+          />
+        )}
+        {showAuthModal && (
+          <AuthModal 
+            onClose={() => setShowAuthModal(false)} 
+          />
+        )}
+        
+        {activeSessionGoal && (
+          <FocusSession 
+            goal={activeSessionGoal === 'pomodoro' ? null : activeSessionGoal}
+            mode={sessionMode}
+            visualMode={activeSessionGoal === 'pomodoro' ? pomoVisualMode : 'tree'}
+            onFinish={handleFocusFinish}
+            onCancel={() => setActiveSessionGoal(null)}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };

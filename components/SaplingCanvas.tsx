@@ -188,7 +188,37 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
     }
   }, [animate]);
 
-  // Animation loop — entirely within refs, NO React state updates per frame
+  const isVisibleRef = useRef(true);
+  const lastFrameTimeRef = useRef(0);
+
+  // IntersectionObserver to pause animation when scrolled out of viewport
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          isVisibleRef.current = entry.isIntersecting;
+        }
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  // Visibilitychange listener to pause animation when tab is in background
+  useEffect(() => {
+    const handleVisibility = () => {
+      isVisibleRef.current = !document.hidden;
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
+  // Animation loop — entirely within refs, NO React state updates per frame, throttled to 30fps
   useEffect(() => {
     if (!animate || reducedMotionRef.current) {
       // Draw once statically
@@ -196,9 +226,13 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
       return;
     }
 
-    const tick = () => {
-      frameRef.current = (frameRef.current + 1) % 10000;
-      draw(frameRef.current);
+    const tick = (now: number) => {
+      // Pace to ~30 FPS (33ms) for calm pixel sway and minimal CPU overhead
+      if (isVisibleRef.current && now - lastFrameTimeRef.current >= 33) {
+        lastFrameTimeRef.current = now;
+        frameRef.current = (frameRef.current + 1) % 10000;
+        draw(frameRef.current);
+      }
       animIdRef.current = requestAnimationFrame(tick);
     };
     animIdRef.current = requestAnimationFrame(tick);
