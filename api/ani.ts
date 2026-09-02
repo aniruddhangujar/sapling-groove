@@ -42,16 +42,22 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  console.log("[ANI API] Route reached via POST.");
+
   const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  console.log(`[ANI API] API key configured: ${apiKey ? 'YES' : 'NO'}`);
+  
   if (!apiKey) {
+    console.error("[ANI API] CRITICAL ERROR: GEMINI_API_KEY environment variable is missing. Cannot communicate with Google Gemini.");
     return res.status(503).json({
-      error: 'GEMINI_API_KEY is not configured in the server environment.',
+      error: 'GEMINI_API_KEY is not configured in the server environment. Please add it to your environment variables.',
       status: 'unconfigured'
     });
   }
 
   try {
     const { messages = [], context = {} } = req.body || {};
+    console.log(`[ANI API] Request parsed successfully. Processing ${messages.length} messages.`);
 
     const ai = new GoogleGenAI({ apiKey });
 
@@ -85,13 +91,11 @@ export default async function handler(req: any, res: any) {
     }));
 
     // Gemini API requires the first message to be from the 'user'.
-    // If the history starts with a 'model' greeting, shift it out or prepend a dummy user message.
-    // It is safer to drop leading model messages until we find a user message.
     while (formattedContents.length > 0 && formattedContents[0].role === 'model') {
       formattedContents.shift();
     }
 
-
+    console.log("[ANI API] Provider request started to Google Gemini (gemini-2.5-flash)...");
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: formattedContents,
@@ -102,6 +106,7 @@ export default async function handler(req: any, res: any) {
       }
     });
 
+    console.log("[ANI API] Provider response received successfully.");
     const responseText = response.text || "The leaves rustle quietly in the grove.";
 
     return res.status(200).json({
@@ -110,8 +115,11 @@ export default async function handler(req: any, res: any) {
       model: 'gemini-2.5-flash'
     });
   } catch (error: any) {
-    console.error("Gemini API Error in /api/ani:", error);
-    return res.status(500).json({
+    console.error(`[ANI API] Provider error status/message:`, error.message);
+    
+    // Attempt to return appropriate status codes
+    const status = error.status || (error.message.includes('key') ? 401 : 500);
+    return res.status(status).json({
       error: error.message || 'Internal AI service error',
       status: 'error'
     });

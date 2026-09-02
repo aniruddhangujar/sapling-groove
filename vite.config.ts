@@ -25,13 +25,17 @@ function aniDevApiPlugin(apiKey?: string) {
         }
 
         const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY;
+        console.log(`[ANI API DEV] Route reached via POST.`);
+        console.log(`[ANI API DEV] API key configured: ${key ? 'YES' : 'NO'}`);
+
         if (!key) {
+          console.error("[ANI API DEV] CRITICAL ERROR: GEMINI_API_KEY environment variable is missing.");
           res.writeHead(503, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
           });
           res.end(JSON.stringify({
-            error: 'GEMINI_API_KEY is not configured in server environment.',
+            error: 'GEMINI_API_KEY is not configured in the server environment. Please add it to your environment variables.',
             status: 'unconfigured'
           }));
           return;
@@ -42,6 +46,8 @@ function aniDevApiPlugin(apiKey?: string) {
         req.on('end', async () => {
           try {
             const { messages = [], context = {} } = JSON.parse(body || '{}');
+            console.log(`[ANI API DEV] Request parsed successfully. Processing ${messages.length} messages.`);
+            
             const { GoogleGenAI } = await import('@google/genai');
             const ai = new GoogleGenAI({ apiKey: key });
 
@@ -66,7 +72,7 @@ Speak with gentle grounding, concise answers (1-3 short paragraphs), and subtle 
 Never sound corporate, cheerleader-like, or robotic.
 When asked about goals or stats, reference their actual provided Grove context.` + contextString;
 
-            const formattedContents = messages.map((msg: any) => ({
+            let formattedContents = messages.map((msg: any) => ({
               role: msg.role === 'model' ? 'model' : 'user',
               parts: msg.parts.map((p: any) => {
                 if (p.text) return { text: p.text };
@@ -75,6 +81,12 @@ When asked about goals or stats, reference their actual provided Grove context.`
               })
             }));
 
+            // Gemini API requires the first message to be from the 'user'.
+            while (formattedContents.length > 0 && formattedContents[0].role === 'model') {
+              formattedContents.shift();
+            }
+
+            console.log("[ANI API DEV] Provider request started to Google Gemini (gemini-2.5-flash)...");
             const response = await ai.models.generateContent({
               model: 'gemini-2.5-flash',
               contents: formattedContents,
@@ -85,6 +97,7 @@ When asked about goals or stats, reference their actual provided Grove context.`
               }
             });
 
+            console.log("[ANI API DEV] Provider response received successfully.");
             res.writeHead(200, {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': '*'
@@ -95,7 +108,9 @@ When asked about goals or stats, reference their actual provided Grove context.`
               model: 'gemini-2.5-flash'
             }));
           } catch (e: any) {
-            res.writeHead(500, {
+            console.error(`[ANI API DEV] Provider error status/message:`, e.message);
+            const status = e.status || (e.message.includes('key') ? 401 : 500);
+            res.writeHead(status, {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': '*'
             });
