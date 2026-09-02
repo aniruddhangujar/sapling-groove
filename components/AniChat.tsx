@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality } from "@google/genai";
 import { ChatMessage, UserProfile, SaplingGoal } from '../types';
@@ -49,7 +48,6 @@ function downsampleBuffer(buffer: Float32Array, inputSampleRate: number, outputS
   let offsetBuffer = 0;
   while (offsetResult < result.length) {
     const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
-    // Fix: Declared 'count' with 'let' to avoid ReferenceError in strict mode.
     let accum = 0;
     let count = 0;
     for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
@@ -111,7 +109,11 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
   const processorRef = useRef<ScriptProcessorNode | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('sapling_ani_chat_v3', JSON.stringify(messages));
+    try {
+      localStorage.setItem('sapling_ani_chat_v3', JSON.stringify(messages));
+    } catch (e) {
+      console.warn("Could not save Ani chat history:", e);
+    }
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -131,7 +133,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
     if (isVoiceActive) return;
     try {
       setIsVoiceActive(true);
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
       const outCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       outputAudioContextRef.current = outCtx;
       const inCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -176,8 +178,8 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
             }
             if (message.serverContent?.interrupted) { nextStartTimeRef.current = 0; }
           },
-          onerror: (e: ErrorEvent) => stopVoiceSession(),
-          onclose: (e: CloseEvent) => stopVoiceSession()
+          onerror: () => stopVoiceSession(),
+          onclose: () => stopVoiceSession()
         },
         config: {
           responseModalities: [Modality.AUDIO],
@@ -212,9 +214,9 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
       const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-2.5-flash',
         contents: updatedMessages.map(msg => ({ role: msg.role === 'model' ? 'model' : 'user', parts: msg.parts })),
         config: { systemInstruction: ANI_SYSTEM_INSTRUCTIONS + "\n\nCONTEXT: " + getContextPrompt() },
       });
@@ -240,13 +242,13 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
       {/* HUD Background Grid */}
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none hud-grid" />
 
-      {/* Glow-up Header */}
+      {/* Glow Header */}
       <div className="px-4 py-3 border-b-2 border-green-950/40 bg-[#040a04]/90 backdrop-blur-md flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 border-2 flex items-center justify-center relative transition-all duration-300 ${isVoiceActive ? 'border-green-400 bg-green-500/20' : 'border-green-900/40 bg-[#061206]'}`}>
+          <div className={`w-10 h-10 border-2 flex items-center justify-center relative transition-all duration-300 ${isVoiceActive ? 'border-green-400 bg-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'border-green-900/40 bg-[#061206]'}`}>
              <div className={`absolute -top-1 -left-1 w-1.5 h-1.5 ${isVoiceActive ? 'bg-green-400' : 'bg-green-900'}`} />
              <div className={`absolute -bottom-1 -right-1 w-1.5 h-1.5 ${isVoiceActive ? 'bg-green-400' : 'bg-green-900'}`} />
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={isVoiceActive ? 'text-green-400' : 'text-green-600'}>
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={isVoiceActive ? 'text-green-400' : 'text-green-500'}>
               <circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/>
             </svg>
           </div>
@@ -254,31 +256,36 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
             <h2 className={`pixel-font text-xs tracking-wider uppercase transition-colors font-bold ${isVoiceActive ? 'text-green-400' : 'text-zinc-100'}`}>
               ANI {isVoiceActive && <span className="text-[7px] text-green-400 animate-pulse ml-2 align-middle">• SYNCING</span>}
             </h2>
-            <p className="pixel-font text-[7px] text-green-700 uppercase tracking-widest font-bold">Grove Intelligence Interface</p>
+            <p className="pixel-font text-[7px] text-green-500 uppercase tracking-widest font-bold">Grove Intelligence Interface</p>
           </div>
         </div>
         
         <button 
           onClick={isVoiceActive ? stopVoiceSession : startVoiceSession}
-          className={`pixel-font text-[8px] px-3 py-2 border-2 transition-all relative ${isVoiceActive ? 'border-red-600 text-red-400 bg-red-950/40 animate-pulse' : 'border-green-900/40 text-green-500 hover:text-green-400 hover:border-green-700 bg-[#061206]'}`}
+          className={`pixel-font text-[8px] px-3 py-2 border-2 transition-all relative min-h-[36px] ${
+            isVoiceActive 
+              ? 'border-red-600 text-red-400 bg-red-950/40 animate-pulse' 
+              : 'border-green-900/40 text-green-400 hover:text-green-300 hover:border-green-700 bg-[#061206]'
+          }`}
+          aria-label={isVoiceActive ? "Cease voice session" : "Start voice link"}
         >
           {isVoiceActive ? 'CEASE' : 'VOX_LINK'}
           <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-current opacity-60" />
         </button>
       </div>
 
-      {/* Messages Area with Grove Theme */}
-      <div className={`flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar transition-opacity duration-500 z-10 ${isVoiceActive ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
+      {/* Messages Area */}
+      <div className={`flex-1 overflow-y-auto p-4 pt-6 space-y-5 custom-scrollbar transition-opacity duration-500 z-10 ${isVoiceActive ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-            <div className={`max-w-[85%] relative ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-              <div className={`p-3.5 border-2 transition-all duration-300 relative pixel-corners shadow-md ${
+            <div className={`max-w-[88%] sm:max-w-[85%] relative ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+              <div className={`p-3.5 pt-4 border-2 transition-all duration-300 relative pixel-corners shadow-md overflow-visible ${
                 msg.role === 'user' 
                   ? 'bg-[#081208] border-green-900/60 text-green-100' 
                   : 'bg-[#0a1b0a] border-green-950/80 text-green-200'
               }`}>
                 {msg.role === 'model' && (
-                  <div className="absolute -top-2.5 -left-1 bg-green-950 text-[6px] pixel-font px-1.5 py-0.5 text-green-400 border border-green-800/60 uppercase tracking-tighter shadow-sm">
+                  <div className="absolute -top-2.5 left-2 bg-green-950 text-[7px] pixel-font px-2 py-0.5 text-green-400 border border-green-800/60 uppercase tracking-wider shadow-sm z-20">
                     ANI_COMM
                   </div>
                 )}
@@ -294,14 +301,14 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
         {isLoading && (
           <div className="flex justify-start">
             <div className="px-4 py-3 border border-dashed border-green-900/40 bg-green-950/20 animate-pulse">
-              <span className="pixel-font text-[8px] text-green-500 tracking-widest uppercase font-bold">Resonating...</span>
+              <span className="pixel-font text-[8px] text-green-400 tracking-widest uppercase font-bold">Resonating...</span>
             </div>
           </div>
         )}
         <div ref={scrollRef} />
       </div>
 
-      {/* Enhanced Voice Mode Visualizer */}
+      {/* Voice Visualizer */}
       {isVoiceActive && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 space-y-8 animate-in fade-in duration-500 bg-[#040a04]/90 backdrop-blur-md">
           <div className="relative">
@@ -325,7 +332,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
           </div>
           <div className="text-center space-y-2 px-4">
             <p className="pixel-font text-xs text-green-400 tracking-widest uppercase animate-pulse font-bold">Resonance Channel Open</p>
-            <p className="pixel-font text-[8px] text-green-700 uppercase leading-relaxed tracking-wider max-w-[280px]">
+            <p className="pixel-font text-[8px] text-green-500 uppercase leading-relaxed tracking-wider max-w-[280px]">
               Ani is listening to your intentions. Speak without haste.
             </p>
           </div>
@@ -334,19 +341,25 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
 
       {/* Input Bar Overlay */}
       {!isVoiceActive && (
-        <div className="p-3 border-t border-green-950/40 bg-[#061206]/95 backdrop-blur-md z-10 shrink-0">
+        <div className="p-2.5 sm:p-3 border-t border-green-950/40 bg-[#061206]/95 backdrop-blur-md z-10 shrink-0">
           {selectedImage && (
             <div className="mb-2 relative inline-block animate-in zoom-in duration-200">
               <img src={`data:${selectedImage.mimeType};base64,${selectedImage.base64}`} className="w-16 h-16 object-cover border border-green-900 shadow-md" alt="Scan Preview" />
-              <button onClick={() => setSelectedImage(null)} className="absolute -top-2 -right-2 bg-red-950 text-red-400 w-5 h-5 flex items-center justify-center border border-red-900 text-xs pixel-font hover:bg-red-900 transition-colors">×</button>
+              <button 
+                onClick={() => setSelectedImage(null)} 
+                className="absolute -top-2 -right-2 bg-red-950 text-red-400 w-5 h-5 flex items-center justify-center border border-red-900 text-xs pixel-font hover:bg-red-900 transition-colors"
+                aria-label="Remove image"
+              >
+                ×
+              </button>
             </div>
           )}
 
-          <div className="flex gap-2 items-center h-11">
+          <div className="flex gap-2 items-center h-12">
             <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} className="hidden" />
             <button 
               onClick={() => fileInputRef.current?.click()} 
-              className={`w-11 h-11 border-2 transition-all flex items-center justify-center shrink-0 shadow-sm ${selectedImage ? 'bg-green-950/40 border-green-500 text-green-400' : 'bg-[#061206] border-green-950 text-green-700 hover:border-green-800'}`}
+              className={`w-12 h-12 border-2 transition-all flex items-center justify-center shrink-0 shadow-sm min-h-[44px] ${selectedImage ? 'bg-green-950/40 border-green-500 text-green-400' : 'bg-[#061206] border-green-950 text-green-500 hover:border-green-800'}`}
               aria-label="Upload Image"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -360,16 +373,16 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Whisper to the grove..."
-                className="w-full bg-transparent text-green-200 outline-none pixel-font text-[10px] placeholder:text-green-900"
+                className="w-full bg-transparent text-green-200 outline-none pixel-font text-[9px] sm:text-[10px] placeholder:text-green-900"
               />
             </div>
             <PixelButton 
               onClick={handleSend} 
               disabled={isLoading || (!input.trim() && !selectedImage)} 
               variant="primary" 
-              className="h-11 px-4 text-[9px] tracking-wider shrink-0"
+              className="h-12 px-3.5 sm:px-4 text-[9px] sm:text-[10px] tracking-wider shrink-0"
             >
               SEND
             </PixelButton>

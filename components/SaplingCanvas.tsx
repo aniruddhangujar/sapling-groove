@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useCallback } from 'react';
 import { SaplingGoal, TreeType } from '../types';
 import { TREE_CONFIGS, COLORS } from '../constants';
 
@@ -12,20 +12,12 @@ interface Props {
 
 const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, overrideAccruedMinutes }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [frame, setFrame] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef(0);
+  const animIdRef = useRef<number | null>(null);
+  const reducedMotionRef = useRef(false);
 
   const GRID_SIZE = 64;
-
-  useEffect(() => {
-    if (!animate) return;
-    let animId: number;
-    const tick = () => {
-      setFrame(f => (f + 1) % 10000);
-      animId = requestAnimationFrame(tick);
-    };
-    animId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animId);
-  }, [animate]);
 
   const seed = useMemo(() => {
     let s = 0;
@@ -33,23 +25,51 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
     return s;
   }, [goal.id]);
 
+  // Memoize values that the draw function needs
+  const drawDataRef = useRef({ goal, size, overrideAccruedMinutes, seed });
   useEffect(() => {
+    drawDataRef.current = { goal, size, overrideAccruedMinutes, seed };
+  }, [goal, size, overrideAccruedMinutes, seed]);
+
+  // Check reduced motion preference
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    reducedMotionRef.current = mq.matches;
+    const handler = (e: MediaQueryListEvent) => {
+      reducedMotionRef.current = e.matches;
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const draw = useCallback((frame: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const config = TREE_CONFIGS[goal.type] || TREE_CONFIGS[TreeType.OAK];
-    const currentAccrued = overrideAccruedMinutes ?? goal.accruedMinutes;
-    const progress = Math.min(1.0, currentAccrued / goal.totalTargetMinutes);
-    
-    ctx.clearRect(0, 0, size, size);
+    const { goal: g, size: s, overrideAccruedMinutes: overrideMins, seed: sd } = drawDataRef.current;
+    const config = TREE_CONFIGS[g.type] || TREE_CONFIGS[TreeType.OAK];
+    const currentAccrued = overrideMins ?? g.accruedMinutes;
+    const progress = Math.min(1.0, currentAccrued / g.totalTargetMinutes);
+
+    // Handle devicePixelRatio for sharp rendering
+    const dpr = window.devicePixelRatio || 1;
+    const canvasWidth = s;
+    const canvasHeight = s;
+
+    if (canvas.width !== canvasWidth * dpr || canvas.height !== canvasHeight * dpr) {
+      canvas.width = canvasWidth * dpr;
+      canvas.height = canvasHeight * dpr;
+      ctx.scale(dpr, dpr);
+    }
+
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     ctx.imageSmoothingEnabled = false;
 
-    const pSize = size / GRID_SIZE;
+    const pSize = canvasWidth / GRID_SIZE;
 
     const setPixel = (x: number, y: number, color: string) => {
-      // SAFE BOUNDARIES: Strictly enforced to prevent any UI clipping
       if (x < 6 || x >= GRID_SIZE - 6 || y < 6 || y >= GRID_SIZE - 6) return;
       ctx.fillStyle = color;
       ctx.fillRect(Math.floor(x * pSize), Math.floor(y * pSize), Math.ceil(pSize), Math.ceil(pSize));
@@ -74,13 +94,14 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
       }
     };
 
-    // STABILIZED ANIMATION: Reduced intensity to feel more grounded
-    const sway = animate ? (Math.sin(frame * 0.03) * 0.5) : 0;
-    const wind = animate ? (Math.sin(frame * 0.015) * 0.4) : 0;
+    // Animation values — reduced or zero when reduced-motion is active
+    const useAnimation = animate && !reducedMotionRef.current;
+    const sway = useAnimation ? (Math.sin(frame * 0.03) * 0.5) : 0;
+    const wind = useAnimation ? (Math.sin(frame * 0.015) * 0.4) : 0;
 
     const centerX = GRID_SIZE / 2;
-    const baseY = GRID_SIZE - 12; // Adjusted baseline for bird perching space below
-    const leafColor = goal.health < 35 ? COLORS.WILTING : config.color;
+    const baseY = GRID_SIZE - 12;
+    const leafColor = g.health < 35 ? COLORS.WILTING : config.color;
     const trunkColor = config.trunk;
 
     // --- STABLE GROUND ---
@@ -88,27 +109,27 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
     
     // Lush ground cover
     for (let i = 0; i < 10; i++) {
-      const gx = 10 + ((seed + i * 14) % (GRID_SIZE - 20));
-      const gSway = animate ? Math.sin(frame * 0.03 + i) * 0.8 : 0;
+      const gx = 10 + ((sd + i * 14) % (GRID_SIZE - 20));
+      const gSway = useAnimation ? Math.sin(frame * 0.03 + i) * 0.8 : 0;
       setPixel(gx, baseY, '#064e3b'); 
       setPixel(Math.floor(gx + gSway), baseY - 1, '#10b981');
       if (i % 4 === 0) setPixel(Math.floor(gx + gSway), baseY - 2, '#fbbf24');
     }
 
     if (progress < 0.1) {
-      const pulse = Math.abs(Math.sin(frame * 0.08)) > 0.5;
+      const pulse = useAnimation ? Math.abs(Math.sin(frame * 0.08)) > 0.5 : true;
       drawRect(centerX - 1, baseY - 1, 3, 2, trunkColor);
       if (pulse) setPixel(centerX, baseY - 2, leafColor);
       return;
     }
 
-    // --- CONSERVATIVE TREE LOGIC ---
-    switch (goal.type) {
+    // --- TREE RENDERING ---
+    switch (g.type) {
       case TreeType.CHERRY_BLOSSOM: {
         const trunkH = Math.floor(progress * 16); 
         let currX = centerX;
         for (let i = 0; i < trunkH; i++) {
-          const drift = Math.sin(i * 0.3 + seed) * 1.0;
+          const drift = Math.sin(i * 0.3 + sd) * 1.0;
           const tWidth = Math.max(2, Math.floor(4 - (i / trunkH) * 2));
           drawRect(Math.floor(currX + drift - tWidth / 2), baseY - i, tWidth, 1, trunkColor);
           if (i === trunkH - 1) currX += drift;
@@ -116,12 +137,11 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
         if (progress > 0.15) {
           const foliageP = (progress - 0.15) / 0.85;
           const spread = Math.floor(foliageP * 12); 
-          // HIGH DENSITY FILL: Overlapping clusters to ensure no patches
           for (let j = 0; j < 65; j++) {
             const ang = (j / 65) * Math.PI * 2;
             const dist = (j % 5 === 0) ? spread : (Math.random() * spread);
-            const cX = currX + Math.cos(ang + seed) * dist;
-            const cY = (baseY - trunkH) + Math.sin(ang + seed) * (dist * 0.5);
+            const cX = currX + Math.cos(ang + sd) * dist;
+            const cY = (baseY - trunkH) + Math.sin(ang + sd) * (dist * 0.5);
             drawCirclePixel(Math.floor(cX + wind), Math.floor(cY), Math.floor(3 + foliageP * 2), leafColor);
             if (j % 15 === 0) setPixel(Math.floor(cX + wind), Math.floor(cY), '#fff');
           }
@@ -155,7 +175,6 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
         if (progress > 0.2) {
           const canopyP = (progress - 0.2) / 0.8;
           const spread = Math.floor(canopyP * 14); 
-          // MAX DENSITY FOILIAGE
           for (let k = 0; k < 80; k++) {
             const ang = (k / 80) * Math.PI * 2;
             const dist = (k % 4 === 0) ? (canopyP * spread) : (Math.random() * (canopyP * spread));
@@ -167,26 +186,52 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
         break;
       }
     }
-  }, [goal, size, overrideAccruedMinutes, frame, animate, seed]);
+  }, [animate]);
+
+  // Animation loop — entirely within refs, NO React state updates per frame
+  useEffect(() => {
+    if (!animate || reducedMotionRef.current) {
+      // Draw once statically
+      draw(0);
+      return;
+    }
+
+    const tick = () => {
+      frameRef.current = (frameRef.current + 1) % 10000;
+      draw(frameRef.current);
+      animIdRef.current = requestAnimationFrame(tick);
+    };
+    animIdRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (animIdRef.current !== null) {
+        cancelAnimationFrame(animIdRef.current);
+        animIdRef.current = null;
+      }
+    };
+  }, [animate, draw]);
+
+  // Redraw when meaningful props change (without animation loop restart)
+  useEffect(() => {
+    draw(frameRef.current);
+  }, [goal.accruedMinutes, goal.health, goal.type, overrideAccruedMinutes, size, draw]);
 
   return (
     <div 
-      className="relative flex items-center justify-center pointer-events-none overflow-hidden shrink-0" 
-      style={{ width: size, height: size, maxWidth: '100%', maxHeight: '100%' }}
+      ref={containerRef}
+      className="relative flex items-center justify-center pointer-events-none overflow-hidden shrink-0"
+      style={{ width: '100%', maxWidth: `${size}px`, aspectRatio: '1 / 1' }}
+      role="img"
+      aria-label={`${goal.type} tree at ${Math.round((goal.accruedMinutes / goal.totalTargetMinutes) * 100)}% growth`}
     >
       <canvas 
         ref={canvasRef} 
-        width={size} 
-        height={size} 
         style={{ 
           imageRendering: 'pixelated',
           width: '100%',
           height: '100%',
-          maxWidth: `${size}px`,
-          maxHeight: `${size}px`,
-          objectFit: 'contain'
         }}
-        className="block transition-all duration-[600ms]" 
+        className="block" 
       />
     </div>
   );

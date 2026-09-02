@@ -45,23 +45,21 @@ export interface SaplingGoal {
 
 export interface FocusSessionLog {
   id: string;
-  timestamp: number;
-  endTime: number;
   goalId?: string;
   goalName: string;
   treeType?: TreeType;
+  mode: 'chronos' | 'groove';
+  startedAt: number;       // timestamp ms
+  endedAt: number;          // timestamp ms
   durationMinutes: number;
-  targetMinutes: number;
-  mode: 'chronos' | 'grove';
-  isComplete: boolean;
-  focusContribution: number;
+  completed: boolean;
 }
 
 export interface UserProfile {
   isPremium: boolean;
   totalFocusTime: number;
   grove: SaplingGoal[];
-  logs?: FocusSessionLog[];
+  logs: FocusSessionLog[];
 }
 
 export interface ChatMessage {
@@ -72,6 +70,8 @@ export interface ChatMessage {
   )[];
 }
 
-export type AppTab = 'grove' | 'sanctuary' | 'tasks' | 'ani';
+export type AppTab = 'grove' | 'logs' | 'tasks' | 'ani';
+
+export type FocusMode = 'chronos' | 'groove';
 
 export type PomoVisualMode = 'clock' | 'tree';

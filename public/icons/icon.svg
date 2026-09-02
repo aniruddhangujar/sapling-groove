@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#040a04"/>
+  <rect x="24" y="24" width="464" height="464" rx="72" fill="#061406" stroke="#15803d" stroke-width="8"/>
+  <g transform="translate(64, 64) scale(0.75)">
+    <!-- Soil -->
+    <rect x="96" y="400" width="320" height="24" fill="#14532d"/>
+    <rect x="128" y="380" width="256" height="20" fill="#166534"/>
+    <!-- Trunk -->
+    <rect x="236" y="200" width="40" height="180" fill="#78350f"/>
+    <rect x="244" y="210" width="24" height="170" fill="#92400e"/>
+    <!-- Foliage / Leaves (Pixel-Art Branches) -->
+    <rect x="196" y="100" width="120" height="100" rx="8" fill="#15803d"/>
+    <rect x="156" y="140" width="200" height="70" rx="8" fill="#16a34a"/>
+    <rect x="176" y="80" width="160" height="80" rx="8" fill="#22c55e"/>
+    <rect x="216" y="60" width="80" height="50" rx="6" fill="#4ade80"/>
+    <!-- Golden Sprout Sparkle -->
+    <rect x="248" y="40" width="16" height="16" fill="#fbbf24"/>
+    <rect x="240" y="44" width="32" height="8" fill="#fde68a"/>
+  </g>
+</svg>

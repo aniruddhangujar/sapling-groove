@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TimelineType, TreeType, SaplingGoal } from '../types';
 import { TREE_CONFIGS } from '../constants';
@@ -60,30 +59,32 @@ const TreeIcon: React.FC<{ type: TreeType; active: boolean }> = ({ type, active 
       fill={active ? displayColor : "none"} 
       stroke={displayColor} 
       strokeWidth="1.5"
-      className="mb-2 transition-all duration-300"
+      className="mb-1.5 transition-all duration-300"
     >
       {paths[type] || paths[TreeType.OAK]}
     </svg>
   );
 };
 
-const NumberInput: React.FC<{ value: number; onChange: (v: number) => void }> = ({ value, onChange }) => (
-  <div className="flex bg-[#0a0a0a] border-2 border-zinc-900 items-center overflow-hidden h-12">
+const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; label: string }> = ({ value, onChange, label }) => (
+  <div className="flex bg-[#0a0a0a] border-2 border-green-950 items-center overflow-hidden h-12">
     <div className="flex-1 text-center py-2">
-      <span className="pixel-font text-lg text-zinc-100">{value}</span>
+      <span className="pixel-font text-base text-zinc-100">{value}</span>
     </div>
-    <div className="flex flex-col border-l-2 border-zinc-900 h-full w-10 shrink-0">
+    <div className="flex flex-col border-l-2 border-green-950 h-full w-10 shrink-0">
       <button 
+        type="button"
         onClick={() => onChange(value + 1)} 
-        className="flex-1 flex items-center justify-center hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-        aria-label="Increase value"
+        className="flex-1 flex items-center justify-center hover:bg-green-950/40 text-green-500 hover:text-green-300 transition-colors"
+        aria-label={`Increase ${label}`}
       >
         <span className="text-[9px]">▲</span>
       </button>
       <button 
+        type="button"
         onClick={() => onChange(Math.max(1, value - 1))} 
-        className="flex-1 flex items-center justify-center border-t-2 border-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-        aria-label="Decrease value"
+        className="flex-1 flex items-center justify-center border-t-2 border-green-950 hover:bg-green-950/40 text-green-500 hover:text-green-300 transition-colors"
+        aria-label={`Decrease ${label}`}
       >
         <span className="text-[9px]">▼</span>
       </button>
@@ -128,7 +129,7 @@ const GoalModal: React.FC<Props> = ({ onClose, onSubmit }) => {
        if (andIdx === parts.length - 1) parts.splice(andIdx, 1);
     }
 
-    return `The tree will be fully mature in ${parts.join(' ')}`;
+    return `Tree matures upon reaching ${parts.join(' ')} of focused ritual`;
   };
 
   const handleCreate = () => {
@@ -156,70 +157,82 @@ const GoalModal: React.FC<Props> = ({ onClose, onSubmit }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center sm:items-center justify-center p-3 sm:p-4 z-[150] animate-in fade-in duration-200 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-2 sm:p-4 z-[150] animate-in fade-in duration-200 backdrop-blur-sm pb-safe pt-safe">
       <div className="bg-[#0f140f] w-full max-w-md max-h-[92vh] border-2 border-green-950/60 flex flex-col relative shadow-[0_0_50px_rgba(0,0,0,0.9)] overflow-hidden">
         
         {/* Header */}
-        <header className="px-5 py-4 border-b-2 border-green-950/40 flex justify-between items-center bg-[#070e07] shrink-0">
+        <header className="px-4 sm:px-5 py-3.5 border-b-2 border-green-950/40 flex justify-between items-center bg-[#070e07] shrink-0">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-500 inline-block"></span>
-            <h2 className="pixel-font text-sm text-zinc-100 uppercase tracking-wider">PLANT NEW SEED</h2>
+            <span className="w-2 h-2 bg-green-500 inline-block" />
+            <h2 className="pixel-font text-xs sm:text-sm text-zinc-100 uppercase tracking-wider">PLANT NEW SEED</h2>
           </div>
           <button 
             onClick={onClose} 
-            className="w-8 h-8 flex items-center justify-center text-green-700 hover:text-green-400 text-xl font-bold transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-green-600 hover:text-green-300 text-xl font-bold transition-colors"
+            aria-label="Close modal"
           >
             ×
           </button>
         </header>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-6">
-          <section className="space-y-2">
-            <h3 className="pixel-font text-[9px] text-green-700 uppercase tracking-[0.2em] font-bold">INTENT</h3>
-            <div className="bg-black border-2 border-green-950/60 p-3 flex items-center">
+        <div className="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-5">
+          <section className="space-y-1.5">
+            <label htmlFor="goal-name-input" className="block pixel-font text-[8px] sm:text-[9px] text-green-500 uppercase tracking-[0.2em] font-bold">
+              INTENT
+            </label>
+            <div className="bg-black border-2 border-green-950/60 p-2.5 sm:p-3 flex items-center">
               <input 
+                id="goal-name-input"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="My Intent or Goal..."
-                className="w-full bg-transparent outline-none pixel-font text-[10px] text-zinc-200 placeholder:text-zinc-700"
+                className="w-full bg-transparent outline-none pixel-font text-[9px] sm:text-[10px] text-zinc-200 placeholder:text-zinc-700"
                 maxLength={40}
               />
             </div>
           </section>
 
-          <section className="space-y-2">
+          <section className="space-y-1.5">
             <div className="flex justify-between items-center">
-              <h3 className="pixel-font text-[9px] text-green-700 uppercase tracking-[0.2em] font-bold">TREE VARIETY</h3>
-              <span className="pixel-font text-[8px] text-green-500 uppercase">{type}</span>
+              <span className="pixel-font text-[8px] sm:text-[9px] text-green-500 uppercase tracking-[0.2em] font-bold">TREE VARIETY</span>
+              <span className="pixel-font text-[8px] text-green-400 uppercase font-bold">{type}</span>
             </div>
-            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1 bg-black/40 border border-green-950/40">
+            <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-1.5 sm:gap-2 max-h-44 overflow-y-auto p-1 bg-black/40 border border-green-950/40">
               {Object.values(TreeType).map(t => (
                 <button 
                   key={t}
+                  type="button"
                   onClick={() => setType(t)}
-                  className={`group flex flex-col items-center justify-center p-2.5 border-2 transition-all duration-200 ${type === t ? 'border-green-500 bg-green-950/40' : 'border-green-950/40 bg-[#061006] hover:border-green-900'}`}
+                  className={`group flex flex-col items-center justify-center p-2 sm:p-2.5 border-2 transition-all duration-200 min-h-[44px] ${
+                    type === t ? 'border-green-500 bg-green-950/40 shadow-sm' : 'border-green-950/40 bg-[#061006] hover:border-green-800'
+                  }`}
                 >
                   <TreeIcon type={t} active={type === t} />
-                  <span className={`pixel-font text-[7px] uppercase tracking-wider text-center line-clamp-1 ${type === t ? 'text-green-300 font-bold' : 'text-zinc-500'}`}>{t}</span>
+                  <span className={`pixel-font text-[7px] uppercase tracking-wider text-center line-clamp-1 ${type === t ? 'text-green-300 font-bold' : 'text-zinc-500'}`}>
+                    {t}
+                  </span>
                 </button>
               ))}
             </div>
           </section>
 
-          <section className="space-y-2">
-            <h3 className="pixel-font text-[9px] text-green-700 uppercase tracking-[0.2em] font-bold">GOAL HORIZON</h3>
+          <section className="space-y-1.5">
+            <span className="block pixel-font text-[8px] sm:text-[9px] text-green-500 uppercase tracking-[0.2em] font-bold">GOAL HORIZON</span>
             <div className="flex gap-2">
               <div className="w-20 shrink-0">
-                <NumberInput value={durationValue} onChange={setDurationValue} />
+                <NumberInput value={durationValue} onChange={setDurationValue} label="duration" />
               </div>
               <div className="flex-1 grid grid-cols-2 gap-1.5">
                  {[TimelineType.DAY, TimelineType.WEEK, TimelineType.MONTH, TimelineType.YEAR].map(tl => (
                    <button 
                     key={tl} 
+                    type="button"
                     onClick={() => setTimeline(tl)}
-                    className={`pixel-font text-[8px] py-2 px-1 border-2 transition-all flex items-center justify-center ${timeline === tl ? 'border-green-500 text-white bg-green-900/40 shadow-sm' : 'border-green-950/40 bg-[#061006] text-zinc-500 hover:text-zinc-300'}`}
+                    className={`pixel-font text-[8px] py-2 px-1 border-2 transition-all flex items-center justify-center min-h-[44px] ${
+                      timeline === tl ? 'border-green-500 text-white bg-green-900/40 shadow-sm font-bold' : 'border-green-950/40 bg-[#061006] text-zinc-500 hover:text-zinc-300'
+                    }`}
                    >
                      {tl.toUpperCase()}
                    </button>
@@ -228,18 +241,21 @@ const GoalModal: React.FC<Props> = ({ onClose, onSubmit }) => {
             </div>
           </section>
 
-          <section className="space-y-2">
-            <h3 className="pixel-font text-[9px] text-green-700 uppercase tracking-[0.2em] font-bold">DAILY RITUAL</h3>
+          <section className="space-y-1.5">
+            <span className="block pixel-font text-[8px] sm:text-[9px] text-green-500 uppercase tracking-[0.2em] font-bold">DAILY RITUAL</span>
             <div className="flex gap-2">
               <div className="w-20 shrink-0">
-                <NumberInput value={focusValue} onChange={setFocusValue} />
+                <NumberInput value={focusValue} onChange={setFocusValue} label="daily ritual target" />
               </div>
-              <div className="flex-1 flex gap-2">
+              <div className="flex-1 flex gap-1.5">
                  {['hrs', 'mins'].map(u => (
                    <button 
                     key={u} 
+                    type="button"
                     onClick={() => setFocusUnit(u as any)}
-                    className={`flex-1 pixel-font text-[9px] py-2 border-2 transition-all flex items-center justify-center ${focusUnit === u ? 'border-green-500 text-white bg-green-900/40 shadow-sm' : 'border-green-950/40 bg-[#061006] text-zinc-500 hover:text-zinc-300'}`}
+                    className={`flex-1 pixel-font text-[9px] py-2 border-2 transition-all flex items-center justify-center min-h-[44px] ${
+                      focusUnit === u ? 'border-green-500 text-white bg-green-900/40 shadow-sm font-bold' : 'border-green-950/40 bg-[#061006] text-zinc-500 hover:text-zinc-300'
+                    }`}
                    >
                      {u.toUpperCase()}
                    </button>
@@ -249,17 +265,21 @@ const GoalModal: React.FC<Props> = ({ onClose, onSubmit }) => {
           </section>
 
           {/* Maturity Projection */}
-          <section className="p-3 bg-[#070e07] border border-green-950/50 text-center">
-            <p className="pixel-font text-[8px] text-green-400 uppercase leading-relaxed tracking-wider">
+          <section className="p-2.5 sm:p-3 bg-[#070e07] border border-green-950/50 text-center">
+            <p className="pixel-font text-[7.5px] sm:text-[8px] text-green-400 uppercase leading-relaxed tracking-wider">
               {getMaturityText()}
             </p>
           </section>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t-2 border-green-950/40 bg-[#070e07] shrink-0 flex gap-3">
-           <PixelButton onClick={onClose} variant="secondary" className="flex-1 py-3 text-[10px]">CANCEL</PixelButton>
-           <PixelButton onClick={handleCreate} variant="success" className="flex-[2] py-3 text-[10px]" disabled={!name.trim()}>PLANT SEED</PixelButton>
+        <div className="p-3 sm:p-4 border-t-2 border-green-950/40 bg-[#070e07] shrink-0 flex gap-2 sm:gap-3">
+           <PixelButton onClick={onClose} variant="secondary" className="flex-1 py-3 text-[9px] sm:text-[10px] h-11">
+             CANCEL
+           </PixelButton>
+           <PixelButton onClick={handleCreate} variant="success" className="flex-[2] py-3 text-[9px] sm:text-[10px] h-11" disabled={!name.trim()}>
+             PLANT SEED
+           </PixelButton>
         </div>
       </div>
     </div>
