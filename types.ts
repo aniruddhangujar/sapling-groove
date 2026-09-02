@@ -1,4 +1,3 @@
-
 export enum TreeType {
   OAK = 'Oak',
   CHERRY_BLOSSOM = 'Cherry Blossom',
@@ -50,16 +49,36 @@ export interface FocusSessionLog {
   treeType?: TreeType;
   mode: 'chronos' | 'groove';
   startedAt: number;       // timestamp ms
-  endedAt: number;          // timestamp ms
+  endedAt: number;         // timestamp ms
   durationMinutes: number;
   completed: boolean;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  displayName: string;
+  avatarUrl?: string;
+  createdAt: number;
+  isAnonymous: boolean;
+}
+
+export interface AuthSession {
+  user: User | null;
+  provider: 'google' | 'guest' | null;
+  isAuthenticated: boolean;
+}
+
 export interface UserProfile {
+  userId?: string;
   isPremium: boolean;
   totalFocusTime: number;
   grove: SaplingGoal[];
   logs: FocusSessionLog[];
+  preferences?: {
+    soundscape?: string;
+    soundEnabled?: boolean;
+  };
 }
 
 export interface ChatMessage {
@@ -75,3 +94,16 @@ export type AppTab = 'grove' | 'logs' | 'tasks' | 'ani';
 export type FocusMode = 'chronos' | 'groove';
 
 export type PomoVisualMode = 'clock' | 'tree';
+
+export type AppViewMode = 'landing' | 'app';
+
+export interface IntentSpecimen {
+  id: string;
+  title: string;
+  tagline: string;
+  treeType: TreeType;
+  suggestedDurationDays: number;
+  dailyMinutes: number;
+  iconName: string;
+  philosophy: string;
+}

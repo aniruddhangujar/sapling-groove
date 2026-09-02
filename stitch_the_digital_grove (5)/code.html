@@ -1,0 +1,460 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Sapling - Underground Ritual</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500&amp;family=JetBrains+Mono:wght@600&amp;family=Space+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "scanline-overlay": "rgba(0, 0, 0, 0.25)",
+                    "on-secondary": "#402d00",
+                    "tertiary-container": "#ffacd2",
+                    "surface-container-high": "#242c25",
+                    "glow-primary": "rgba(74, 222, 128, 0.3)",
+                    "glow-amber": "rgba(227, 170, 0, 0.3)",
+                    "primary-container": "#4ade80",
+                    "background-deep": "#050805",
+                    "inverse-primary": "#006d36",
+                    "surface-tint": "#4de082",
+                    "inverse-surface": "#dde5da",
+                    "secondary": "#ffc640",
+                    "on-error-container": "#ffdad6",
+                    "on-surface": "#dde5da",
+                    "on-secondary-fixed": "#261a00",
+                    "tertiary-fixed": "#ffd8e7",
+                    "surface-bright": "#333b34",
+                    "secondary-fixed": "#ffdf9f",
+                    "inverse-on-surface": "#2b322b",
+                    "on-primary-fixed": "#00210c",
+                    "on-tertiary": "#620040",
+                    "surface-dim": "#0e150f",
+                    "primary-fixed-dim": "#4de082",
+                    "primary": "#6bfb9a",
+                    "surface-container": "#1a211b",
+                    "on-primary": "#003919",
+                    "error": "#ffb4ab",
+                    "on-secondary-container": "#5a4100",
+                    "secondary-container": "#e3aa00",
+                    "tertiary-fixed-dim": "#ffafd3",
+                    "outline-variant": "#3d4a3e",
+                    "outline": "#869486",
+                    "on-tertiary-fixed": "#3d0026",
+                    "surface-variant": "#2f372f",
+                    "tertiary": "#ffd5e6",
+                    "on-tertiary-container": "#932265",
+                    "surface-panel": "#0c130c",
+                    "terminal-green": "#4ade80",
+                    "soil-amber": "#e3aa00",
+                    "on-surface-variant": "#bccabb",
+                    "on-background": "#dde5da",
+                    "on-tertiary-fixed-variant": "#85145a",
+                    "surface-container-highest": "#2f372f",
+                    "on-primary-fixed-variant": "#005227",
+                    "error-container": "#93000a",
+                    "on-error": "#690005",
+                    "primary-fixed": "#6dfe9c",
+                    "surface-container-lowest": "#09100a",
+                    "secondary-fixed-dim": "#f9bd22",
+                    "background": "#0e150f",
+                    "on-primary-container": "#005e2d",
+                    "surface-container-low": "#161d17",
+                    "on-secondary-fixed-variant": "#5c4300",
+                    "surface": "#0e150f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "container-max": "1200px",
+                    "section-padding": "48px",
+                    "margin-mobile": "20px",
+                    "gutter": "16px",
+                    "margin-desktop": "64px"
+            },
+            "fontFamily": {
+                    "display-lg": [
+                            "Space Mono"
+                    ],
+                    "label-ui": [
+                            "JetBrains Mono"
+                    ],
+                    "headline-md": [
+                            "Space Mono"
+                    ],
+                    "body-sm": [
+                            "Fira Sans"
+                    ],
+                    "body-lg": [
+                            "Fira Sans"
+                    ],
+                    "display-lg-mobile": [
+                            "Space Mono"
+                    ]
+            },
+            "fontSize": {
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.04em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-ui": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.0",
+                                    "letterSpacing": "0.1em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "letterSpacing": "0px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "letterSpacing": "0px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-lg-mobile": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background-deep');
+            color: theme('colors.on-surface');
+            position: relative;
+        }
+
+        /* CRT Effects */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0),
+                rgba(255, 255, 255, 0) 50%,
+                theme('colors.scanline-overlay') 50%,
+                theme('colors.scanline-overlay')
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, transparent 40%, rgba(12, 10, 5, 0.9) 100%);
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        .dither-bg {
+            background-image: radial-gradient(theme('colors.soil-amber') 1px, transparent 1px);
+            background-size: 4px 4px;
+            opacity: 0.15;
+        }
+
+        /* Interactive Elements */
+        .btn-primary {
+            background-color: theme('colors.terminal-green');
+            color: theme('colors.background-deep');
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0);
+        }
+        .btn-primary:hover {
+            box-shadow: 0 0 15px theme('colors.terminal-green');
+            animation: flicker 0.5s infinite alternate;
+        }
+
+        .btn-ghost {
+            border: 1px solid theme('colors.soil-amber');
+            color: theme('colors.soil-amber');
+            background: transparent;
+            transition: all 0.3s ease;
+        }
+        .btn-ghost:hover {
+            box-shadow: inset 0 0 10px theme('colors.glow-amber');
+        }
+
+        @keyframes flicker {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes rise-spore {
+            0% { transform: translateY(100px) scale(0.5); opacity: 0; }
+            20% { opacity: 0.8; }
+            80% { opacity: 0.8; }
+            100% { transform: translateY(-150px) scale(1.2); opacity: 0; }
+        }
+
+        .glow-text {
+            text-shadow: 0 0 10px theme('colors.glow-primary');
+        }
+        
+        .glow-text-amber {
+            text-shadow: 0 0 10px theme('colors.glow-amber');
+        }
+
+        .panel {
+            background-color: theme('colors.surface-panel');
+            border: 1px solid rgba(227, 170, 0, 0.3);
+            position: relative;
+        }
+        
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="antialiased font-body-sm overflow-x-hidden selection:bg-terminal-green selection:text-background-deep">
+<!-- CRT Overlays -->
+<div class="scanlines"></div>
+<div class="vignette"></div>
+<!-- Top Navigation -->
+<header class="fixed top-0 w-full bg-surface/80 dark:bg-surface/80 backdrop-blur-md border-b border-soil-amber/30 z-50 flex justify-between items-center px-margin-mobile py-gutter shadow-[0_0_15px_rgba(227,170,0,0.1)]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-soil-amber text-xl">terminal</span>
+<span class="font-display-lg-mobile text-headline-md tracking-tighter text-soil-amber glow-text-amber">[SAPLING]</span>
+</div>
+<button class="font-label-ui text-label-ui text-on-surface-variant hover:text-soil-amber transition-colors hover:glow-amber duration-300">
+            [TERMINAL_LOGIN]
+        </button>
+</header>
+<main class="w-full flex flex-col items-center">
+<!-- Section 1: HERO -->
+<section class="min-h-[100svh] w-full flex flex-col items-center justify-center px-margin-mobile relative border-b border-soil-amber/30 pt-20 bg-gradient-to-b from-[#0a0d0a] to-[#121612]">
+<div class="absolute inset-0 dither-bg pointer-events-none"></div>
+<div class="relative w-full h-[40vh] flex items-center justify-center mb-8">
+<img alt="Glowing solarpunk seed nestled in roots" class="h-full w-auto object-contain z-10 drop-shadow-[0_0_30px_rgba(74,222,128,0.5)]" src="https://lh3.googleusercontent.com/aida/AEtjO1WplTxFX-oCnalWzgnKlT8oyetRl63FP4DjejdMmKPqnTmm5FRszi5g0lekLJptk53f9gkId9sS_xP_OCPA7KqPe5ymHJpVICkg5GzN_utQ89xaIP3FG5eN5Qg27ztTCrwEacslTsUeN7jZZrIFeqRn4XcbbCjLJO6M0OydTA_4ousJOqNQAy-FIHicAs_bfzCVAMeTrAgbMixFa4Wn1pc9cFAX-F9aOy9NWXuBAMkHjEL5GwXkjkhuZ8g" style="animation: float 4s ease-in-out infinite;">
+</div>
+<div class="z-10 text-center flex flex-col items-center gap-6">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-on-surface text-center leading-tight glow-text-amber max-w-[300px]">
+                    YOUR ATTENTION<br>IS A SEED.
+                </h1>
+<button class="btn-primary font-label-ui text-label-ui px-8 py-4 rounded-none uppercase tracking-widest mt-4">
+                    [ PLANT YOUR FIRST SEED ]
+                </button>
+</div>
+<div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-soil-amber/50">
+<span class="font-label-ui text-label-ui">SCROLL TO NURTURE</span>
+<span class="material-symbols-outlined animate-bounce">arrow_downward</span>
+</div>
+</section>
+<!-- Section 2: PLANT -->
+<section class="min-h-[100svh] w-full flex flex-col px-margin-mobile relative border-b border-soil-amber/30 justify-center">
+<div class="absolute inset-0 z-0">
+<img alt="Cyber-organic roots forming" class="w-full h-full object-cover opacity-40 mix-blend-overlay" src="https://lh3.googleusercontent.com/aida/AEtjO1UrpdmsMimtc8f23VLnikkxus8dz85xo32yUT1BAahZiu6ln0aukL7SFt9hEaZMAKS6YYDE9XRFEX-bNnGF97dS7X1QmaOmeA1F6DipJjPwBiCWoZbjuFFBewJ1vh8koGSyLfgL8p_aV9xmBPIfUwng5M6vsEPxUoW6FokvXiO3KZ56w1YiUS5DIlSAWDpYUES9XBkMJS496VAme5yBglJtxYtvCyc5jhsegTN9E58p3c6qv1QYaKotJg">
+<div class="absolute inset-0 bg-gradient-to-b from-[#121612] via-transparent to-[#0a0c0a]"></div>
+</div>
+<div class="panel p-6 z-10 w-full max-w-[350px] mx-auto backdrop-blur-md bg-surface-panel/90 border-soil-amber/40">
+<div class="flex items-center gap-3 mb-4 text-soil-amber">
+<span class="material-symbols-outlined">network_node</span>
+<span class="font-label-ui text-label-ui">SYSTEM.ROOT_ESTABLISHED</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">FOCUS GIVES IT ENERGY.</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Deep work sessions act as nutrients. The longer you sustain uninterrupted focus, the deeper the digital roots spread into the solarpunk lattice.
+                </p>
+<div class="w-full h-[1px] bg-soil-amber/30 my-4"></div>
+<div class="flex justify-between items-center font-label-ui text-[10px] text-soil-amber/70">
+<span>&gt; INITIALIZING NEURAL LINK...</span>
+<span>100%</span>
+</div>
+</div>
+</section>
+<!-- Section 3: GROW -->
+<section class="min-h-[100svh] w-full flex flex-col px-margin-mobile relative border-b border-soil-amber/30 justify-center">
+<div class="absolute inset-0 dither-bg pointer-events-none z-0"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0a0c0a] to-[#121612] z-0"></div>
+<div class="w-full h-[50vh] relative z-10 mb-8 flex justify-center items-center">
+<!-- Particle simulation container -->
+<div class="absolute inset-0 overflow-hidden" id="particles-container">
+<!-- Javascript will inject particles here -->
+</div>
+<img alt="Glowing sapling growing" class="h-full w-auto object-contain drop-shadow-[0_0_20px_rgba(74,222,128,0.4)]" src="https://lh3.googleusercontent.com/aida/AEtjO1Val5DfOgjFZltss6JcUbHZWDny0BdrDVP77QqiD6tOtaj-wxlrBb1iOYoBNPG86I6tmLUI4-yNs1kAqgT17gw4q8ux4zgF1d5HrNZf7PUXYtoiK8kYGVhQ0bnJ0bvQ_bKKNjJG-b_a2wuCJXNkcw7OFDD_ElsfvjCEeUTHgiG4l0chjfhBJXGMiihpXNnA3zZTHfLfeD5x8haGU63Kvy2flDLqTMZ1Z4sbCOrpSanChbNbomKVyvCTMug">
+</div>
+<div class="z-10 text-center px-4">
+<h2 class="font-display-lg-mobile text-headline-md text-on-surface glow-text mb-4">
+                    EVERY FOCUSED MINUTE<br>BECOMES SOMETHING.
+                </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mx-auto max-w-[280px]">
+                    Watch your efforts materialize. A visual representation of your discipline, rendered in bioluminescent data.
+                </p>
+</div>
+</section>
+<!-- Section 4: THE GROVE -->
+<section class="min-h-[100svh] w-full relative border-b border-soil-amber/30 flex flex-col justify-end">
+<div class="absolute inset-0 z-0">
+<img alt="Wide view solarpunk forest" class="w-full h-full object-cover opacity-50 mix-blend-luminosity sepia-[.3] hue-rotate-[-30deg]" src="https://lh3.googleusercontent.com/aida/AEtjO1UrpdmsMimtc8f23VLnikkxus8dz85xo32yUT1BAahZiu6ln0aukL7SFt9hEaZMAKS6YYDE9XRFEX-bNnGF97dS7X1QmaOmeA1F6DipJjPwBiCWoZbjuFFBewJ1vh8koGSyLfgL8p_aV9xmBPIfUwng5M6vsEPxUoW6FokvXiO3KZ56w1YiUS5DIlSAWDpYUES9XBkMJS496VAme5yBglJtxYtvCyc5jhsegTN9E58p3c6qv1QYaKotJg">
+<div class="absolute inset-0 bg-gradient-to-t from-[#0a0d0a] via-[#121612]/70 to-[#0a0d0a]/30"></div>
+</div>
+<div class="z-10 px-margin-mobile pb-12 w-full">
+<div class="panel p-6 backdrop-blur-sm bg-black/80 w-full max-w-[350px] mx-auto border-soil-amber/40">
+<span class="font-label-ui text-label-ui text-soil-amber block mb-2">&gt; THE_GROVE_PROTOCOL</span>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-3">COLLECTIVE CANOPY</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4">
+                        Your singular focus contributes to the greater ecosystem. Connect with other terminals to build a sprawling forest of productivity.
+                    </p>
+<button class="btn-ghost w-full font-label-ui text-label-ui py-3 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">explore</span>
+                        [ VIEW MAP ]
+                    </button>
+</div>
+</div>
+</section>
+<!-- Section 5: THE RITUAL (Terminals) -->
+<section class="min-h-[100svh] w-full flex flex-col px-margin-mobile py-24 relative border-b border-soil-amber/30 gap-8 bg-[#0a0d0a]">
+<div class="text-center mb-4">
+<h2 class="font-display-lg-mobile text-headline-md text-soil-amber glow-text-amber">THE RITUAL</h2>
+<p class="font-label-ui text-[10px] text-on-surface-variant mt-2">&gt; TOOLS_OF_FOCUS</p>
+</div>
+<!-- CHRONOS Terminal -->
+<div class="panel p-5 w-full max-w-[350px] mx-auto flex flex-col border-soil-amber/30">
+<div class="flex justify-between items-center border-b border-soil-amber/30 pb-3 mb-4">
+<div class="flex items-center gap-2 text-soil-amber">
+<span class="material-symbols-outlined text-sm">timer</span>
+<span class="font-label-ui text-label-ui">CHRONOS_ENG</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-soil-amber animate-pulse shadow-[0_0_5px_#e3aa00]"></span>
+</div>
+<div class="font-display-lg-mobile text-[48px] text-center text-on-surface tracking-tighter mb-4 glow-text-amber">
+                    25:00
+                </div>
+<div class="flex gap-2 justify-center">
+<button class="w-10 h-10 border border-soil-amber/50 flex items-center justify-center text-soil-amber hover:bg-soil-amber/10 transition-colors">
+<span class="material-symbols-outlined">play_arrow</span>
+</button>
+<button class="w-10 h-10 border border-soil-amber/50 flex items-center justify-center text-soil-amber hover:bg-soil-amber/10 transition-colors">
+<span class="material-symbols-outlined">stop</span>
+</button>
+</div>
+</div>
+<!-- GROOVE Terminal -->
+<div class="panel p-5 w-full max-w-[350px] mx-auto flex flex-col border-soil-amber/30">
+<div class="flex justify-between items-center border-b border-soil-amber/30 pb-3 mb-4">
+<div class="flex items-center gap-2 text-soil-amber">
+<span class="material-symbols-outlined text-sm">graphic_eq</span>
+<span class="font-label-ui text-label-ui">GROOVE_FREQ</span>
+</div>
+</div>
+<div class="flex items-end justify-between h-12 mb-4 px-2">
+<div class="w-2 bg-soil-amber/30 h-[20%]"></div>
+<div class="w-2 bg-soil-amber h-[60%]"></div>
+<div class="w-2 bg-soil-amber/50 h-[40%]"></div>
+<div class="w-2 bg-soil-amber h-[90%]"></div>
+<div class="w-2 bg-soil-amber/30 h-[30%]"></div>
+<div class="w-2 bg-soil-amber h-[70%]"></div>
+<div class="w-2 bg-soil-amber/60 h-[50%]"></div>
+</div>
+<button class="btn-ghost w-full font-label-ui text-label-ui py-2 text-xs">
+                    [ SYNC BINAURAL BEATS ]
+                </button>
+</div>
+</section>
+<!-- Section 6: FINAL -->
+<section class="min-h-[100svh] w-full flex flex-col relative justify-end pb-24">
+<div class="absolute inset-0 z-0 bg-[#0a0d0a]">
+<img alt="Large mature cyber-organic tree" class="w-full h-full object-cover opacity-60 mix-blend-luminosity sepia-[.2] hue-rotate-[-20deg]" src="https://lh3.googleusercontent.com/aida/AEtjO1Xzm3YJQoWps-mqA5wpXRiDp6yaSH8fP7rWLEyl0puu2soCGhZMNx6NU0JU3O-78vNbPmK7K2EoEWisEwEfsCoxoKvrn6YeomfWJUxzd8OggG-AXRvDiX4K4RzTR9-ddWnBFrGpv-3SDgy-7z6JZYisqQJRMqkwBIFPQnWRcHZRs44m2Ds_9xSSHu19X6wiKbbCR85KNFCFA4KEVluDb3mcWcfxIAgGwJCwFJl8UkNvCGRdVytHNhHQdSo">
+<div class="absolute inset-0 bg-gradient-to-t from-background-deep via-background-deep/80 to-transparent"></div>
+</div>
+<div class="z-10 px-margin-mobile flex flex-col items-center text-center">
+<div class="font-label-ui text-label-ui text-soil-amber mb-4">&gt; GROWTH_CYCLE_COMPLETE</div>
+<h2 class="font-display-lg-mobile text-[36px] leading-none text-on-surface glow-text mb-8 max-w-[300px]">
+                    THE FUTURE IS CULTIVATED NOW.
+                </h2>
+<button class="btn-primary font-label-ui text-label-ui px-10 py-5 rounded-none uppercase tracking-widest text-[14px] w-full max-w-[320px]">
+                    [ ENTER SAPLING ]
+                </button>
+</div>
+</section>
+</main>
+<script>
+        // Spore particle generator for GROW section
+        document.addEventListener("DOMContentLoaded", () => {
+            const container = document.getElementById('particles-container');
+            if(container) {
+                for(let i=0; i<30; i++) {
+                    const particle = document.createElement('div');
+                    
+                    // Mix of terminal-green and soil-amber particles
+                    const isAmber = Math.random() > 0.5;
+                    particle.className = `absolute rounded-full ${isAmber ? 'bg-soil-amber' : 'bg-terminal-green'}`;
+                    
+                    // Randomize properties
+                    const size = Math.random() * 4 + 1; // 1-5px
+                    const left = Math.random() * 100;
+                    const top = Math.random() * 100;
+                    const duration = Math.random() * 6 + 4; // 4-10s
+                    const delay = Math.random() * 8;
+                    
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.left = `${left}%`;
+                    particle.style.top = `${top}%`;
+                    particle.style.boxShadow = `0 0 8px ${isAmber ? '#e3aa00' : '#4ade80'}`;
+                    particle.style.opacity = '0';
+                    
+                    // Set to rise-spore animation
+                    particle.style.animation = `rise-spore ${duration}s ease-in ${delay}s infinite`;
+                    
+                    container.appendChild(particle);
+                }
+            }
+        });
+    </script>
+</body></html>

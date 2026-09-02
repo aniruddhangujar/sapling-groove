@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { SaplingGoal, UserProfile, TimelineType, TreeType, AppTab, PomoVisualMode, FocusMode, FocusSessionLog } from './types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SaplingGoal, UserProfile, TimelineType, TreeType, AppTab, PomoVisualMode, FocusMode, FocusSessionLog, AppViewMode } from './types';
 import PixelButton from './components/PixelButton';
 import SaplingCanvas from './components/SaplingCanvas';
 import GoalModal from './components/GoalModal';
 import FocusSession from './components/FocusSession';
 import AniChat from './components/AniChat';
 import SanctuaryModal from './components/SanctuaryModal';
+import LandingPage from './components/LandingPage';
+import AuthModal from './components/AuthModal';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { storageService } from './services/storageService';
 
 const SaplingLogo: React.FC = () => (
   <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#061206] border-2 border-green-800/40 flex items-center justify-center relative shadow-[0_0_20px_rgba(34,197,94,0.15)] overflow-hidden shrink-0">
@@ -18,23 +22,19 @@ const SaplingLogo: React.FC = () => (
   </div>
 );
 
-const App: React.FC = () => {
-  const [profile, setProfile] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('sapling_profile_v3');
-    try {
-      if (!saved) return { isPremium: false, totalFocusTime: 0, grove: [], logs: [] };
-      const parsed = JSON.parse(saved);
-      return {
-        isPremium: Boolean(parsed.isPremium),
-        totalFocusTime: Number(parsed.totalFocusTime) || 0,
-        grove: Array.isArray(parsed.grove) ? parsed.grove : [],
-        logs: Array.isArray(parsed.logs) ? parsed.logs : []
-      };
-    } catch (e) {
-      return { isPremium: false, totalFocusTime: 0, grove: [], logs: [] };
+const SaplingAppContent: React.FC = () => {
+  const { showAuthModal, setShowAuthModal, user, isAuthenticated } = useAuth();
+
+  // Determine initial view from URL hash
+  const [viewMode, setViewMode] = useState<AppViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.toLowerCase();
+      if (hash === '#app' || hash === '#grove') return 'app';
     }
+    return 'landing';
   });
 
+  const [profile, setProfile] = useState<UserProfile>(() => storageService.getProfile());
   const [activeTab, setActiveTab] = useState<AppTab>('grove');
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showSanctuaryModal, setShowSanctuaryModal] = useState(false);
@@ -43,25 +43,41 @@ const App: React.FC = () => {
   const [pomoVisualMode, setPomoVisualMode] = useState<PomoVisualMode>('clock');
   const [utilityMode, setUtilityMode] = useState<FocusMode>('chronos');
 
+  // Sync profile changes to storage
   useEffect(() => {
-    try {
-      localStorage.setItem('sapling_profile_v3', JSON.stringify(profile));
-    } catch (e) {
-      console.warn("Could not save profile to localStorage:", e);
-    }
+    storageService.saveProfile(profile);
   }, [profile]);
 
+  // Handle URL hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (hash === '#app' || hash === '#grove') {
+        setViewMode('app');
+      } else if (hash === '#landing' || hash === '#manifesto' || hash === '') {
+        setViewMode('landing');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const navigateToApp = useCallback((options?: { openNewSeed?: boolean; presetTree?: TreeType; presetName?: string }) => {
+    setViewMode('app');
+    window.location.hash = 'app';
+    if (options?.openNewSeed) {
+      setShowGoalModal(true);
+    }
+  }, []);
+
+  const navigateToLanding = useCallback(() => {
+    setViewMode('landing');
+    window.location.hash = 'landing';
+  }, []);
+
   const addGoal = (newGoal: Partial<SaplingGoal>) => {
-    const goal: SaplingGoal = {
-      id: 'intent_' + Math.random().toString(36).substr(2, 9),
-      accruedMinutes: 0,
-      isComplete: false,
-      health: 100,
-      perfectionScore: 1.0,
-      startDate: Date.now(),
-      ...newGoal
-    } as SaplingGoal;
-    setProfile(prev => ({ ...prev, grove: [...prev.grove, goal] }));
+    const created = storageService.addGoal(newGoal);
+    setProfile(prev => ({ ...prev, grove: [...prev.grove, created] }));
     setShowGoalModal(false);
   };
 
@@ -85,15 +101,16 @@ const App: React.FC = () => {
         });
       }
 
-      // Filter out empty logs (e.g. cancelled immediately with 0 duration)
       const newLogs = log.durationMinutes > 0 ? [log, ...prev.logs] : prev.logs;
-
-      return {
+      const updatedProfile: UserProfile = {
         ...prev,
         grove: updatedGrove,
         totalFocusTime: prev.totalFocusTime + minutes,
         logs: newLogs
       };
+
+      storageService.saveProfile(updatedProfile);
+      return updatedProfile;
     });
 
     setActiveSessionGoal(null);
@@ -108,6 +125,26 @@ const App: React.FC = () => {
     setSessionMode(utilityMode);
     setActiveSessionGoal('pomodoro');
   };
+
+  // If in Public Website Mode, render the Landing Page
+  if (viewMode === 'landing') {
+    return (
+      <>
+        <LandingPage 
+          onEnterApp={navigateToApp} 
+          onOpenAuth={() => setShowAuthModal(true)} 
+        />
+        {showAuthModal && (
+          <AuthModal 
+            onClose={() => setShowAuthModal(false)} 
+            onSuccess={() => navigateToApp()} 
+          />
+        )}
+      </>
+    );
+  }
+
+  // --- APPLICATION MODE ---
 
   const renderGrove = () => {
     const activeGoals = profile.grove.filter(g => !g.isComplete);
@@ -442,14 +479,31 @@ const App: React.FC = () => {
           <span className="pixel-font text-xl xs:text-2xl md:text-3xl tracking-tighter text-white drop-shadow-md">
             SAPLING
           </span>
+          {/* Subtle Surface / Manifesto Navigation Button */}
+          <button
+            onClick={navigateToLanding}
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 border border-green-900/50 bg-[#061406] text-green-400/80 hover:text-green-200 hover:border-green-600 pixel-font text-[7.5px] uppercase tracking-wider transition-colors ml-2"
+            title="Return to Public Manifesto"
+          >
+            <span>← SURFACE</span>
+          </button>
         </div>
-        <div className="text-right flex flex-col items-end min-w-[90px]">
-           <div className="pixel-font text-[6px] sm:text-[7px] text-green-400 uppercase tracking-widest mb-0.5 font-bold">
-             Total Focus
-           </div>
-           <div className="pixel-font text-sm sm:text-base md:text-lg text-green-300 font-bold tracking-tight">
-              {Math.floor(profile.totalFocusTime / 60)}H {Math.round(profile.totalFocusTime % 60)}M
-           </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={navigateToLanding}
+            className="sm:hidden text-green-500 hover:text-green-300 pixel-font text-[8px] uppercase tracking-wider border border-green-950 px-2 py-1"
+          >
+            SURFACE
+          </button>
+          <div className="text-right flex flex-col items-end min-w-[85px]">
+             <div className="pixel-font text-[6px] sm:text-[7px] text-green-400 uppercase tracking-widest mb-0.5 font-bold">
+               Total Focus
+             </div>
+             <div className="pixel-font text-sm sm:text-base md:text-lg text-green-300 font-bold tracking-tight">
+                {Math.floor(profile.totalFocusTime / 60)}H {Math.round(profile.totalFocusTime % 60)}M
+             </div>
+          </div>
         </div>
       </header>
 
@@ -506,6 +560,11 @@ const App: React.FC = () => {
           onUnlock={() => setProfile(prev => ({ ...prev, isPremium: true }))} 
         />
       )}
+      {showAuthModal && (
+        <AuthModal 
+          onClose={() => setShowAuthModal(false)} 
+        />
+      )}
       
       {activeSessionGoal && (
         <FocusSession 
@@ -517,6 +576,14 @@ const App: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <SaplingAppContent />
+    </AuthProvider>
   );
 };
 
