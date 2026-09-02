@@ -28,6 +28,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Save chat history to localStorage
   useEffect(() => {
@@ -38,6 +39,15 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
     }
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '20px'; // Reset to base height to calculate scroll height correctly
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${Math.min(scrollHeight, 100)}px`;
+    }
+  }, [input]);
 
   // Build real, structured Grove context
   const groveContext = useMemo(() => {
@@ -211,7 +221,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
           </div>
         )}
 
-        <div className="flex gap-1.5 sm:gap-2 items-center min-h-[48px]">
+        <div className="flex gap-1.5 sm:gap-2 items-end min-h-[48px]">
           <input 
             type="file" 
             accept="image/*" 
@@ -237,14 +247,21 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
             </svg>
           </button>
 
-          <div className="flex-1 bg-[#061206] border-2 border-green-900/70 focus-within:border-green-400 flex items-center px-3 h-11 sm:h-12 transition-all shadow-inner">
-            <input
-              type="text"
+          <div className="flex-1 bg-[#061206] border-2 border-green-900/70 focus-within:border-green-400 flex py-3 px-3 transition-all shadow-inner relative items-center">
+            <textarea
+              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
               placeholder="Whisper to Ani..."
-              className="w-full bg-transparent text-green-100 outline-none text-xs sm:text-sm font-sans placeholder:text-green-800 placeholder:font-mono"
+              className="w-full bg-transparent text-green-100 outline-none text-xs sm:text-sm font-sans placeholder:text-green-800 placeholder:font-mono resize-none overflow-y-auto custom-scrollbar block leading-snug"
+              style={{ minHeight: '20px', maxHeight: '100px', height: '20px' }}
+              rows={1}
             />
           </div>
 
