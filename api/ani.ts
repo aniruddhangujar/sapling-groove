@@ -58,9 +58,6 @@ export default async function handler(req: any, res: any) {
   try {
     const { messages = [], context = {} } = req.body || {};
     console.log(`[ANI API] Request parsed successfully. Processing ${messages.length} messages.`);
-
-    const ai = new GoogleGenAI({ apiKey });
-
     // Format context summary
     let contextString = "\n\nCURRENT USER GROVE CONTEXT:\n";
     if (context.currentGoalName) {
@@ -84,7 +81,7 @@ export default async function handler(req: any, res: any) {
     if (apiKey.startsWith('sk-or-')) {
       console.log("[ANI API] Detected OpenRouter API key. Routing via OpenRouter...");
       
-      const orMessages = [
+      const orMessages: { role: string, content: string | any[] }[] = [
         { role: 'system', content: systemInstruction }
       ];
 
