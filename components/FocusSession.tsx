@@ -4,6 +4,7 @@ import PixelButton from './PixelButton';
 import SaplingCanvas from './SaplingCanvas';
 import { QUOTES, MUSIC_TRACKS } from '../constants';
 import { useTimer } from '../hooks/useTimer';
+import { soundEngine } from '../utils/audioEngine';
 
 interface Props {
   goal: SaplingGoal | null;
@@ -118,8 +119,8 @@ const FocusSession: React.FC<Props> = ({
   const [sessionState, setSessionState] = useState<SessionState>('active');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [breakReminderIdx, setBreakReminderIdx] = useState(0);
-  const [selectedMusic, setSelectedMusic] = useState(MUSIC_TRACKS[1]);
-  const [isMusicEnabled, setIsMusicEnabled] = useState(false);
+  const [selectedMusic, setSelectedMusic] = useState(MUSIC_TRACKS[1]); // Default to 'zen' Ambient Resonance
+  const [isMusicEnabled, setIsMusicEnabled] = useState(true); // Enabled by default on ritual start
   const [showSettings, setShowSettings] = useState(false);
   const [breakDuration, setBreakDuration] = useState(5);
   const [frame, setFrame] = useState(0);
@@ -127,7 +128,7 @@ const FocusSession: React.FC<Props> = ({
   const [accruedMins, setAccruedMins] = useState(0);
 
   const startTimestampRef = useRef<number>(Date.now());
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const focusMode: FocusMode = mode === 'groove' ? 'groove' : 'chronos';
 
   // Fallback dummy goal for Pomodoro mode tree visualization
   const pomoDummyGoal: SaplingGoal = useMemo(() => ({
@@ -144,8 +145,6 @@ const FocusSession: React.FC<Props> = ({
     health: 100,
     perfectionScore: 1.0
   }), []);
-
-  const focusMode: FocusMode = mode === 'groove' ? 'groove' : 'chronos';
 
   // Main ritual timer
   const handleRitualComplete = useCallback(() => {
@@ -171,38 +170,21 @@ const FocusSession: React.FC<Props> = ({
     }
   });
 
-  // Audio Playback Lifecycle Management
+  // Start sound when ritual is running and music is enabled
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (isMusicEnabled && selectedMusic.url && selectedMusic.id !== 'none') {
-      audio.src = selectedMusic.url;
-      audio.loop = true;
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn("Audio autoplay prevented by browser policy:", err);
-        });
-      }
-    } else {
-      audio.pause();
+    if (isMusicEnabled && selectedMusic.id !== 'none' && (timer.isRunning || breakTimer.isRunning)) {
+      soundEngine.playTrack(selectedMusic.id);
+    } else if (!timer.isRunning && !breakTimer.isRunning) {
+      soundEngine.pause();
+    } else if (!isMusicEnabled || selectedMusic.id === 'none') {
+      soundEngine.stop();
     }
+  }, [isMusicEnabled, selectedMusic, timer.isRunning, breakTimer.isRunning]);
 
-    return () => {
-      if (audio) {
-        audio.pause();
-      }
-    };
-  }, [isMusicEnabled, selectedMusic]);
-
-  // Cleanup audio on component unmount
+  // Clean up audio on unmount
   useEffect(() => {
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-      }
+      soundEngine.stop();
     };
   }, []);
 
@@ -274,6 +256,9 @@ const FocusSession: React.FC<Props> = ({
     setSessionState('on_break');
     breakTimer.reset();
     breakTimer.start();
+    if (isMusicEnabled && selectedMusic.id !== 'none') {
+      soundEngine.playTrack(selectedMusic.id);
+    }
   };
 
   const createLogEntry = (durationMinutes: number, completed: boolean): FocusSessionLog => ({
@@ -289,10 +274,9 @@ const FocusSession: React.FC<Props> = ({
   });
 
   const handleFinishSession = (isComplete: boolean) => {
+    soundEngine.stop();
     const totalMinutesSpent = sessionState === 'active'
-      ? (mode === 'chronos'
-          ? Math.floor(timer.elapsedSeconds / 60)
-          : Math.floor(timer.elapsedSeconds / 60))
+      ? Math.floor(timer.elapsedSeconds / 60)
       : accruedMins;
 
     const finalMinutes = Math.max(0, totalMinutesSpent);
@@ -302,6 +286,7 @@ const FocusSession: React.FC<Props> = ({
 
   const handleGrooveEndRitual = () => {
     timer.pause();
+    soundEngine.pause();
     const elapsedMinutes = Math.floor(timer.elapsedSeconds / 60);
     const finalMinutes = Math.max(1, elapsedMinutes);
     setAccruedMins(finalMinutes);
@@ -309,12 +294,40 @@ const FocusSession: React.FC<Props> = ({
   };
 
   const handleAutoSaveExit = () => {
+    soundEngine.stop();
     const elapsedMinutes = Math.floor(timer.elapsedSeconds / 60);
     if (elapsedMinutes > 0) {
       const log = createLogEntry(elapsedMinutes, false);
       onFinish(elapsedMinutes, false, log);
     } else {
       onCancel();
+    }
+  };
+
+  const handleToggleSound = () => {
+    if (isMusicEnabled) {
+      setIsMusicEnabled(false);
+      soundEngine.stop();
+    } else {
+      setIsMusicEnabled(true);
+      const track = selectedMusic.id === 'none' ? MUSIC_TRACKS[1] : selectedMusic;
+      setSelectedMusic(track);
+      if (timer.isRunning || breakTimer.isRunning) {
+        soundEngine.playTrack(track.id);
+      }
+    }
+  };
+
+  const handleSelectTrack = (track: typeof MUSIC_TRACKS[0]) => {
+    setSelectedMusic(track);
+    if (track.id === 'none') {
+      setIsMusicEnabled(false);
+      soundEngine.stop();
+    } else {
+      setIsMusicEnabled(true);
+      if (timer.isRunning || breakTimer.isRunning) {
+        soundEngine.playTrack(track.id);
+      }
     }
   };
 
@@ -419,19 +432,18 @@ const FocusSession: React.FC<Props> = ({
     );
   }
 
-  const isChronos = mode === 'chronos';
+  const isChronos = focusMode === 'chronos';
   const displayTimerSeconds = sessionState === 'on_break' ? breakTimer.displaySeconds : timer.displaySeconds;
   const isTimerRunning = sessionState === 'on_break' ? breakTimer.isRunning : timer.isRunning;
   const timerProgress = sessionState === 'on_break' ? breakTimer.progress : timer.progress;
 
   return (
-    <div className="fixed inset-0 bg-[#040a04] z-[100] flex flex-col justify-between p-3 sm:p-6 text-center animate-in fade-in duration-500 overflow-hidden select-none pb-safe pt-safe">
+    <div className="fixed inset-0 bg-[#040a04] z-[100] flex flex-col justify-between p-3 sm:p-5 md:p-6 text-center animate-in fade-in duration-500 overflow-hidden select-none pb-safe pt-safe">
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none hud-grid" />
-      <audio ref={audioRef} />
 
       {/* HEADER HUD */}
       <div className="w-full max-w-md mx-auto pt-1 sm:pt-2 z-10 shrink-0">
-        <div className="flex justify-between items-center px-2 py-2 border-b border-green-950/40">
+        <div className="flex justify-between items-center px-2 py-2 border-b border-green-900/30">
           <div className="text-left">
             <h2 className="pixel-font text-[9px] sm:text-[10px] text-green-400 uppercase tracking-wider font-bold truncate max-w-[160px] sm:max-w-[200px]">
               {sessionState === 'on_break'
@@ -442,7 +454,7 @@ const FocusSession: React.FC<Props> = ({
                 ? 'CHRONOS RITUAL'
                 : 'GROOVE RITUAL'}
             </h2>
-            <div className={`pixel-font text-[7px] mt-0.5 ${sessionState === 'on_break' ? 'text-blue-400' : 'text-green-500'}`}>
+            <div className={`pixel-font text-[7px] mt-0.5 ${sessionState === 'on_break' ? 'text-blue-400' : 'text-green-400'}`}>
               {sessionState === 'on_break'
                 ? '• REST INTERVAL'
                 : isChronos
@@ -451,24 +463,28 @@ const FocusSession: React.FC<Props> = ({
             </div>
           </div>
           <div className="text-right">
-            <div className="pixel-font text-[6px] text-green-700 uppercase tracking-widest font-bold">
+            <div className="pixel-font text-[6px] text-green-500 uppercase tracking-widest font-bold">
               {isChronos ? 'TARGET' : 'MODE'}
             </div>
-            <div className="pixel-font text-[10px] sm:text-xs text-green-400 font-bold">
+            <div className="pixel-font text-[10px] sm:text-xs text-green-300 font-bold">
               {isChronos ? formatTime(targetDurationSeconds) : 'GROOVE'}
             </div>
           </div>
         </div>
       </div>
 
-      {/* RITUAL VIEWPORT */}
-      <div className="relative w-full max-w-[280px] xs:max-w-[300px] sm:max-w-[340px] aspect-square mx-auto border-2 border-green-950/40 bg-[#061206]/60 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden my-auto shrink-0">
-        {/* Background Watermark */}
+      {/* RITUAL VIEWPORT — Comfortable Internal Padding & Spacing */}
+      <div className="relative w-full max-w-[270px] xs:max-w-[290px] sm:max-w-[320px] md:max-w-[340px] aspect-square mx-auto border-2 border-green-950/60 bg-[#061206]/70 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.85)] overflow-hidden my-auto shrink-0 p-3 sm:p-5">
+        {/* Subtle Background Watermark */}
         <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
           <span className="pixel-font text-xs uppercase tracking-[2em] text-green-500">
             {sessionState === 'on_break' ? 'REST' : isChronos ? 'CHRONOS' : 'GROOVE'}
           </span>
         </div>
+
+        {/* Corner Bracket Details */}
+        <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-green-500/40 pointer-events-none" />
+        <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b-2 border-r-2 border-green-500/40 pointer-events-none" />
 
         {/* Nature details during Break mode */}
         {sessionState === 'on_break' && (
@@ -484,41 +500,42 @@ const FocusSession: React.FC<Props> = ({
           <PixelBird key={bird.id} data={bird} frame={frame} />
         ))}
 
-        {/* Visual Content */}
-        <div className="w-full h-full flex flex-col items-center justify-center p-3 sm:p-4 z-10 relative">
+        {/* Visual Content: Timer Circle with Breathing Room */}
+        <div className="w-full h-full flex flex-col items-center justify-center z-10 relative">
           {visualMode === 'clock' && isChronos && sessionState !== 'on_break' ? (
             <div className="relative w-full h-full flex items-center justify-center">
-              <svg viewBox="0 0 100 100" className="w-[85%] h-[85%] transform -rotate-90 drop-shadow-[0_0_15px_rgba(34,197,94,0.2)]">
-                <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-green-950/40" />
+              {/* Circular SVG Timer: viewBox 120 120, radius 46, circumference 289.03 */}
+              <svg viewBox="0 0 120 120" className="w-[78%] h-[78%] sm:w-[80%] sm:h-[80%] transform -rotate-90 drop-shadow-[0_0_15px_rgba(34,197,94,0.25)]">
+                <circle cx="60" cy="60" r="46" stroke="currentColor" strokeWidth="2.5" fill="transparent" className="text-green-950/50" />
                 <circle
-                  cx="50"
-                  cy="50"
-                  r="42"
+                  cx="60"
+                  cy="60"
+                  r="46"
                   stroke="currentColor"
-                  strokeWidth="5"
+                  strokeWidth="5.5"
                   fill="transparent"
-                  strokeDasharray="263.89"
-                  strokeDashoffset={`${263.89 * (1 - timerProgress)}`}
+                  strokeDasharray="289.03"
+                  strokeDashoffset={`${289.03 * (1 - timerProgress)}`}
                   strokeLinecap="round"
-                  className="text-green-500 shadow-[0_0_20px_#22c55e] transition-all duration-300"
+                  className="text-green-400 shadow-[0_0_20px_#22c55e] transition-all duration-300"
                 />
               </svg>
               {/* Centered Timer HUD */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <h2 className="pixel-font text-3xl sm:text-4xl md:text-5xl text-white select-none tracking-tighter leading-none">
+                <h2 className="pixel-font text-3xl xs:text-4xl sm:text-5xl text-white select-none tracking-tighter leading-none shadow-md">
                   {formatTime(displayTimerSeconds)}
                 </h2>
-                <span className="pixel-font text-[7px] text-green-500 uppercase mt-3 tracking-widest font-bold">
+                <span className="pixel-font text-[7.5px] sm:text-[8px] text-green-400 uppercase mt-3 tracking-widest font-bold">
                   {isTimerRunning ? 'Ritual Active' : 'Paused'}
                 </span>
               </div>
             </div>
           ) : (
-            <div className="relative w-full h-full flex flex-col items-center justify-between py-2">
+            <div className="relative w-full h-full flex flex-col items-center justify-between py-1">
               {/* Top HUD Badge for Timer */}
-              <div className="z-20 px-3 py-1 bg-[#050c05]/90 border border-green-900/60 pixel-corners shadow-md flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${isTimerRunning ? 'bg-green-500 animate-pulse' : 'bg-zinc-600'}`} />
-                <span className="pixel-font text-lg sm:text-xl text-white tracking-tight">
+              <div className="z-20 px-3 py-1 bg-[#050c05]/95 border border-green-800/70 pixel-corners shadow-md flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${isTimerRunning ? 'bg-green-400 animate-pulse' : 'bg-zinc-600'}`} />
+                <span className="pixel-font text-base sm:text-lg text-white tracking-tight">
                   {formatTime(displayTimerSeconds)}
                 </span>
               </div>
@@ -527,14 +544,14 @@ const FocusSession: React.FC<Props> = ({
               <div className="relative flex-1 flex items-center justify-center w-full my-auto overflow-hidden">
                 <SaplingCanvas
                   goal={activeGoalForCanvas}
-                  size={220}
+                  size={200}
                   overrideAccruedMinutes={activeGoalForCanvas.accruedMinutes + currentElapsedSeconds / 60}
                 />
               </div>
 
               {/* Bottom Tree Growth Status */}
               <div className="z-20 text-center">
-                <span className="pixel-font text-[7px] text-green-500 uppercase tracking-widest font-bold">
+                <span className="pixel-font text-[7.5px] sm:text-[8px] text-green-400 uppercase tracking-widest font-bold">
                   {sessionState === 'on_break'
                     ? 'SANCTUARY REST'
                     : goal
@@ -549,28 +566,49 @@ const FocusSession: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* CONTROLS & QUOTE */}
-      <div className="w-full max-w-md mx-auto flex flex-col items-center space-y-3 sm:space-y-4 z-10 shrink-0 pb-2">
-        {/* Quote / Reminder Text */}
-        <div className="min-h-[32px] sm:min-h-[36px] flex items-center justify-center px-4">
-          <p className="text-green-600 text-[10px] sm:text-[11px] italic text-center font-bold tracking-wider leading-relaxed line-clamp-2 max-w-[320px]">
+      {/* CONTROLS & ENHANCED MOTIVATIONAL QUOTE */}
+      <div className="w-full max-w-md mx-auto flex flex-col items-center space-y-3 sm:space-y-4 z-10 shrink-0 pb-1">
+        {/* Readable Motivational Quote / Reminder */}
+        <div className="min-h-[44px] sm:min-h-[52px] flex items-center justify-center px-4 py-1 max-w-sm sm:max-w-md mx-auto text-center">
+          <p className="text-green-300 text-sm xs:text-base sm:text-lg font-serif italic text-center font-normal tracking-wide leading-snug drop-shadow-sm">
             "{sessionState === 'on_break' ? BREAK_REMINDERS[breakReminderIdx] : quote}"
           </p>
         </div>
 
         {/* Action Controls */}
         <div className="w-full flex justify-between items-center gap-2 sm:gap-3 px-2">
-          {/* Sound / Music Toggle */}
+          {/* Sound / Music Toggle Button */}
           <button
-            onClick={() => setShowSettings(true)}
+            onClick={handleToggleSound}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setShowSettings(true);
+            }}
             className={`w-12 h-12 border-2 transition-all bg-[#0a160a] pixel-corners flex items-center justify-center shrink-0 shadow-md ${
-              isMusicEnabled ? 'border-green-500 text-green-400' : 'border-green-950 text-green-700'
+              isMusicEnabled && selectedMusic.id !== 'none'
+                ? 'border-green-400 text-green-300 bg-green-950/40 shadow-[0_0_15px_rgba(34,197,94,0.2)]'
+                : 'border-green-900/60 text-green-600 hover:border-green-700'
             }`}
-            aria-label="Sound Settings"
+            aria-label={isMusicEnabled ? `Ambient Audio: ${selectedMusic.name}` : "Sound Muted"}
+            title="Click to toggle sound, or open sound settings"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+              {isMusicEnabled && selectedMusic.id !== 'none' ? (
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+              ) : (
+                <path d="M4.27 3L3 4.27l9 9v.28c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4v-1.73l4.27 4.27L20.27 21 21.54 19.73 4.27 3zM14 7h4V3h-6v5.18l2 2V7z" />
+              )}
             </svg>
+          </button>
+
+          {/* Sound Settings Gear Button */}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="w-10 h-12 border-2 border-green-900/50 bg-[#061206] text-green-400 hover:border-green-600 hover:text-green-200 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md text-xs pixel-font"
+            aria-label="Select ambient soundscape"
+            title="Select soundscape"
+          >
+            ♫
           </button>
 
           {/* Primary COMMENCE / HALT Button */}
@@ -635,7 +673,7 @@ const FocusSession: React.FC<Props> = ({
           {/* Exit Button */}
           <button
             onClick={handleAutoSaveExit}
-            className="w-12 h-12 border-2 border-green-950 bg-[#0a160a] text-green-700 hover:text-red-400 hover:border-red-900/60 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md"
+            className="w-12 h-12 border-2 border-green-950 bg-[#0a160a] text-green-500 hover:text-red-400 hover:border-red-900/60 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md"
             aria-label="Exit Session"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -648,39 +686,44 @@ const FocusSession: React.FC<Props> = ({
       {/* Music Selector Modal */}
       {showSettings && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#040a04]/95 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-xs bg-[#0a160a] border-2 border-green-950/60 p-5 sm:p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-5 border-b border-green-950/40 pb-3">
-              <h3 className="pixel-font text-[9px] text-green-400 uppercase tracking-widest font-bold">
+          <div className="relative w-full max-w-xs bg-[#0a160a] border-2 border-green-950/80 p-5 sm:p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-5 border-b border-green-900/40 pb-3">
+              <h3 className="pixel-font text-[9px] text-green-300 uppercase tracking-widest font-bold">
                 Ambient Soundscape
               </h3>
               <button
                 onClick={() => setShowSettings(false)}
-                className="text-green-500 text-2xl leading-none hover:text-green-300 transition-colors"
+                className="text-green-400 text-2xl leading-none hover:text-green-200 transition-colors"
                 aria-label="Close"
               >
                 ×
               </button>
             </div>
             <div className="space-y-2">
-              {MUSIC_TRACKS.map(track => (
-                <button
-                  key={track.id}
-                  onClick={() => {
-                    setSelectedMusic(track);
-                    setIsMusicEnabled(track.id !== 'none');
-                  }}
-                  className={`text-[9px] pixel-font w-full p-3 text-left border-2 transition-all flex items-center justify-between min-h-[44px] ${
-                    selectedMusic.id === track.id
-                      ? 'border-green-500 bg-green-950/40 text-white shadow-sm'
-                      : 'border-green-950/40 bg-[#050c05] text-green-600 hover:border-green-800'
-                  }`}
-                >
-                  <span>{track.name}</span>
-                  {selectedMusic.id === track.id && (
-                    <span className="text-green-400 font-bold">ACTIVE</span>
-                  )}
-                </button>
-              ))}
+              {MUSIC_TRACKS.map(track => {
+                const isSelected = selectedMusic.id === track.id && (track.id === 'none' ? !isMusicEnabled : isMusicEnabled);
+                return (
+                  <button
+                    key={track.id}
+                    onClick={() => handleSelectTrack(track)}
+                    className={`text-[9px] pixel-font w-full p-3 text-left border-2 transition-all flex items-center justify-between min-h-[44px] ${
+                      isSelected
+                        ? 'border-green-400 bg-green-950/50 text-green-200 shadow-[0_0_12px_rgba(34,197,94,0.25)]'
+                        : 'border-green-950/60 bg-[#050c05] text-green-400/80 hover:border-green-700 hover:text-green-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold">{track.name}</div>
+                      <div className="text-[7px] text-green-500/70 font-sans mt-0.5">{track.desc}</div>
+                    </div>
+                    {isSelected && (
+                      <span className="text-green-400 font-bold text-[8px] border border-green-500 px-1.5 py-0.5">
+                        ACTIVE
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
             <PixelButton onClick={() => setShowSettings(false)} className="w-full mt-5 py-3 text-[9px] h-11" variant="success">
               CONFIRM

@@ -1,4 +1,3 @@
-
 import { TreeType } from './types';
 
 export const COLORS = {
@@ -39,7 +38,8 @@ export const QUOTES = [
 ];
 
 export const MUSIC_TRACKS = [
-  { id: 'none', name: 'Silence', url: '' },
-  { id: 'zen', name: 'Ambient Resonance', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
-  { id: 'nature', name: 'Forest Whispers', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' }
+  { id: 'none', name: 'Silence', desc: 'No background audio' },
+  { id: 'zen', name: 'Ambient Resonance', desc: '432Hz Harmonic Solarpunk Drone' },
+  { id: 'nature', name: 'Forest Whispers', desc: 'Wind rustle and gentle chimes' },
+  { id: 'rain', name: 'Sanctuary Rain', desc: 'Soft bio-filtered rainfall' }
 ];

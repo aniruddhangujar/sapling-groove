@@ -118,7 +118,7 @@ const App: React.FC = () => {
             <h1 className="pixel-font text-lg xs:text-xl sm:text-2xl text-white uppercase tracking-[0.15em] sm:tracking-[0.2em]">
               The Grove
             </h1>
-            <p className="text-green-500 text-[9px] sm:text-[10px] uppercase tracking-widest font-bold">
+            <p className="text-green-400 text-[9px] sm:text-[10px] uppercase tracking-widest font-bold">
               Natural Intentions
             </p>
           </div>
@@ -132,13 +132,13 @@ const App: React.FC = () => {
         </div>
 
         {activeGoals.length === 0 ? (
-          <div className="border-2 border-green-900/20 p-8 sm:p-14 md:p-20 text-center bg-[#061206]/40 relative">
-            <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-green-500/40" />
-            <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-green-500/40" />
-            <p className="pixel-font text-[10px] sm:text-xs uppercase tracking-[0.4em] sm:tracking-[0.5em] text-green-500 mb-4 font-bold">
+          <div className="border-2 border-green-900/30 p-8 sm:p-14 md:p-20 text-center bg-[#061206]/50 relative">
+            <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-green-500/50" />
+            <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-green-500/50" />
+            <p className="pixel-font text-[10px] sm:text-xs uppercase tracking-[0.4em] sm:tracking-[0.5em] text-green-400 mb-4 font-bold">
               Empty Soil
             </p>
-            <p className="text-green-400 text-[11px] sm:text-xs leading-relaxed uppercase tracking-widest max-w-xs mx-auto">
+            <p className="text-green-300/80 text-[11px] sm:text-xs leading-relaxed uppercase tracking-widest max-w-xs mx-auto">
               Plant a seed to begin your botanical focus ritual.
             </p>
           </div>
@@ -149,13 +149,13 @@ const App: React.FC = () => {
               return (
                 <div 
                   key={goal.id} 
-                  className="group relative bg-[#0a160a] border-2 border-green-950/60 p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 hover:border-green-500/40 transition-all duration-300 shadow-2xl"
+                  className="group relative bg-[#0a160a] border-2 border-green-950/70 p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 hover:border-green-500/50 transition-all duration-300 shadow-2xl"
                 >
                   <div className="absolute top-0 left-0 w-2 h-2 bg-green-500/30" />
                   <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500/30" />
                   
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-stretch">
-                    <div className="bg-[#050c05] border border-green-900/30 flex items-center justify-center shrink-0 w-44 sm:w-44 aspect-square relative overflow-hidden shadow-[inset_0_0_30px_rgba(34,197,94,0.05)]">
+                    <div className="bg-[#050c05] border border-green-900/40 flex items-center justify-center shrink-0 w-44 sm:w-44 aspect-square relative overflow-hidden shadow-[inset_0_0_30px_rgba(34,197,94,0.05)]">
                       <SaplingCanvas goal={goal} size={180} />
                     </div>
 
@@ -165,13 +165,13 @@ const App: React.FC = () => {
                           <h3 className="pixel-font text-base sm:text-lg text-zinc-100 uppercase tracking-tighter truncate">
                             {goal.name}
                           </h3>
-                          <p className="pixel-font text-[7px] sm:text-[8px] text-green-500 uppercase tracking-widest font-bold">
+                          <p className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase tracking-widest font-bold">
                             {goal.type} • {goal.timeline}
                           </p>
                         </div>
 
                         <div className="space-y-1.5">
-                          <div className="flex justify-between text-[7px] sm:text-[8px] pixel-font text-green-400 uppercase tracking-widest font-bold">
+                          <div className="flex justify-between text-[7px] sm:text-[8px] pixel-font text-green-300 uppercase tracking-widest font-bold">
                             <span>Evolution</span>
                             <span>{progressPct}%</span>
                           </div>
@@ -185,11 +185,11 @@ const App: React.FC = () => {
                       </div>
 
                       <div className="flex flex-col xs:flex-row items-stretch xs:items-end gap-2 sm:gap-3 pt-2">
-                        <div className="bg-[#050c05] p-2.5 sm:p-3 border border-green-900/30 flex-1">
-                          <div className="text-green-500 mb-0.5 uppercase text-[6px] sm:text-[7px] tracking-widest pixel-font font-bold">
+                        <div className="bg-[#050c05] p-2.5 sm:p-3 border border-green-900/40 flex-1">
+                          <div className="text-green-400 mb-0.5 uppercase text-[6px] sm:text-[7px] tracking-widest pixel-font font-bold">
                             Stored Focus
                           </div>
-                          <div className="text-green-400 font-bold text-xs sm:text-sm leading-none whitespace-nowrap">
+                          <div className="text-green-300 font-bold text-xs sm:text-sm leading-none whitespace-nowrap">
                             {Math.floor(goal.accruedMinutes / 60)}H {Math.round(goal.accruedMinutes % 60)}M
                           </div>
                         </div>
@@ -245,7 +245,7 @@ const App: React.FC = () => {
            <h1 className="pixel-font text-lg xs:text-xl sm:text-2xl md:text-3xl text-white uppercase tracking-[0.25em] sm:tracking-[0.4em]">
              Pomo Utility
            </h1>
-           <p className="text-green-500 text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-bold">
+           <p className="text-green-400 text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-bold">
              {utilityMode === 'chronos' ? 'Structured Countdown Ritual' : 'Free-Form Elapsed Focus'}
            </p>
            
@@ -255,8 +255,8 @@ const App: React.FC = () => {
                 onClick={() => setUtilityMode('chronos')}
                 className={`px-5 sm:px-8 py-2.5 sm:py-3 border-2 pixel-font text-[8px] sm:text-[9px] uppercase tracking-widest transition-all min-h-[44px] ${
                   utilityMode === 'chronos' 
-                    ? 'border-green-500 bg-green-950/40 text-white shadow-[0_0_20px_rgba(34,197,94,0.2)] font-bold' 
-                    : 'border-green-950/40 bg-[#061206]/40 text-green-600 hover:text-green-400'
+                    ? 'border-green-400 bg-green-950/50 text-white shadow-[0_0_20px_rgba(34,197,94,0.25)] font-bold' 
+                    : 'border-green-800/60 bg-[#061406] text-green-400 hover:text-green-200 hover:border-green-600'
                 }`}
               >
                 CHRONOS
@@ -266,8 +266,8 @@ const App: React.FC = () => {
                 onClick={() => setUtilityMode('groove')}
                 className={`px-5 sm:px-8 py-2.5 sm:py-3 border-2 pixel-font text-[8px] sm:text-[9px] uppercase tracking-widest transition-all min-h-[44px] ${
                   utilityMode === 'groove' 
-                    ? 'border-green-500 bg-green-950/40 text-white shadow-[0_0_20px_rgba(34,197,94,0.2)] font-bold' 
-                    : 'border-green-950/40 bg-[#061206]/40 text-green-600 hover:text-green-400'
+                    ? 'border-green-400 bg-green-950/50 text-white shadow-[0_0_20px_rgba(34,197,94,0.25)] font-bold' 
+                    : 'border-green-800/60 bg-[#061406] text-green-400 hover:text-green-200 hover:border-green-600'
                 }`}
               >
                 GROOVE
@@ -275,21 +275,22 @@ const App: React.FC = () => {
            </div>
         </div>
 
+        {/* Comfortable Spacing for Circular Timer Viewport */}
         <div className="relative flex flex-col items-center justify-center my-auto py-2">
-           <div className="relative w-64 xs:w-72 sm:w-80 h-64 xs:h-72 sm:h-80 flex items-center justify-center bg-[#061206]/60 border-2 border-green-950/40 shadow-2xl group overflow-hidden">
-              <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-green-500/50 group-hover:border-green-500 transition-all z-20" />
-              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-green-500/50 group-hover:border-green-500 transition-all z-20" />
+           <div className="relative w-64 xs:w-72 sm:w-80 h-64 xs:h-72 sm:h-80 flex items-center justify-center bg-[#061206]/70 border-2 border-green-950/60 shadow-2xl group overflow-hidden p-4 sm:p-6">
+              <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-green-500/50 group-hover:border-green-400 transition-all z-20" />
+              <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b-2 border-r-2 border-green-500/50 group-hover:border-green-400 transition-all z-20" />
 
               {utilityMode === 'chronos' ? (
                 <div className="absolute inset-0 flex items-center justify-center">
-                   <div className="relative w-[88%] h-[88%]">
-                      <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90 drop-shadow-[0_0_12px_rgba(34,197,94,0.2)]">
-                        <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-green-950/40" />
+                   <div className="relative w-[78%] h-[78%] sm:w-[80%] sm:h-[80%]">
+                      <svg viewBox="0 0 120 120" className="w-full h-full transform -rotate-90 drop-shadow-[0_0_15px_rgba(34,197,94,0.25)]">
+                        <circle cx="60" cy="60" r="46" stroke="currentColor" strokeWidth="2.5" fill="transparent" className="text-green-950/50" />
                         <circle 
-                          cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="5" fill="transparent" 
-                          strokeDasharray="263.89" 
-                          strokeDashoffset="65.97" 
-                          className="text-green-500"
+                          cx="60" cy="60" r="46" stroke="currentColor" strokeWidth="5.5" fill="transparent" 
+                          strokeDasharray="289.03" 
+                          strokeDashoffset="72.25" 
+                          className="text-green-400"
                           strokeLinecap="round"
                         />
                       </svg>
@@ -297,7 +298,7 @@ const App: React.FC = () => {
                         <h2 className="pixel-font text-4xl sm:text-5xl text-white select-none tracking-tighter leading-none shadow-[0_0_10px_rgba(0,0,0,0.5)]">
                           25:00
                         </h2>
-                        <span className="pixel-font text-[7px] sm:text-[8px] text-green-500 uppercase mt-4 sm:mt-6 tracking-[0.3em] font-bold">
+                        <span className="pixel-font text-[7.5px] sm:text-[8px] text-green-400 uppercase mt-4 sm:mt-5 tracking-[0.3em] font-bold">
                           Countdown Ready
                         </span>
                       </div>
@@ -305,15 +306,15 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-between p-4 bg-[#040a04] animate-in zoom-in-95 fade-in duration-300">
-                  <div className="z-20 px-3 py-1 bg-[#050c05]/90 border border-green-900/60 pixel-corners shadow-md flex items-center gap-2 mt-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <div className="z-20 px-3 py-1 bg-[#050c05]/95 border border-green-800/70 pixel-corners shadow-md flex items-center gap-2 mt-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                     <span className="pixel-font text-base sm:text-lg text-white tracking-tight">00:00 → ∞</span>
                   </div>
                   <div className="relative flex items-center justify-center flex-1 my-auto">
                     <SaplingCanvas goal={dummyGoal} size={200} />
                   </div>
                   <div className="z-20 text-center mb-1">
-                    <span className="pixel-font text-[7px] sm:text-[8px] text-green-500 uppercase tracking-[0.25em] font-bold">
+                    <span className="pixel-font text-[7.5px] sm:text-[8px] text-green-400 uppercase tracking-[0.25em] font-bold">
                       Free-Form Growth
                     </span>
                   </div>
@@ -348,7 +349,7 @@ const App: React.FC = () => {
           <h1 className="pixel-font text-lg xs:text-xl sm:text-2xl text-white uppercase tracking-[0.25em] font-bold">
             Historical Logs
           </h1>
-          <p className="text-green-500 text-[8px] sm:text-[9px] uppercase tracking-widest font-bold">
+          <p className="text-green-400 text-[8px] sm:text-[9px] uppercase tracking-widest font-bold">
             Archive of Focus Rituals & Mature Flora
           </p>
         </div>
@@ -361,23 +362,23 @@ const App: React.FC = () => {
           </h2>
 
           {sessionLogs.length === 0 ? (
-            <div className="border border-green-950/40 bg-[#061206]/30 p-8 text-center">
-              <p className="pixel-font text-[9px] uppercase tracking-widest text-green-600 font-bold">No Rituals Logged Yet</p>
-              <p className="text-green-500/70 text-[10px] mt-1">Complete a Chronos or Groove ritual to record your history.</p>
+            <div className="border border-green-950/60 bg-[#061206]/40 p-8 text-center">
+              <p className="pixel-font text-[9px] uppercase tracking-widest text-green-400 font-bold">No Rituals Logged Yet</p>
+              <p className="text-green-400/80 text-[10px] mt-1">Complete a Chronos or Groove ritual to record your history.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {sessionLogs.slice(0, 20).map(log => (
                 <div 
                   key={log.id} 
-                  className="bg-[#0a160a] border border-green-950/60 p-3.5 flex items-center justify-between shadow-md hover:border-green-800/60 transition-colors"
+                  className="bg-[#0a160a] border border-green-950/70 p-3.5 flex items-center justify-between shadow-md hover:border-green-700/60 transition-colors"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className={`text-[7px] pixel-font px-1.5 py-0.5 uppercase font-bold border ${
                         log.mode === 'groove' 
-                          ? 'bg-amber-950/40 text-amber-400 border-amber-800/40' 
-                          : 'bg-green-950/40 text-green-400 border-green-800/40'
+                          ? 'bg-amber-950/40 text-amber-400 border-amber-800/50' 
+                          : 'bg-green-950/40 text-green-400 border-green-800/50'
                       }`}>
                         {log.mode}
                       </span>
@@ -385,15 +386,15 @@ const App: React.FC = () => {
                         {log.goalName}
                       </h4>
                     </div>
-                    <p className="text-[10px] text-green-500/80 font-mono">
+                    <p className="text-[10px] text-green-400/80 font-mono">
                       {formatDate(log.startedAt)}
                     </p>
                   </div>
                   <div className="text-right space-y-0.5">
-                    <div className="pixel-font text-xs text-green-400 font-bold">
+                    <div className="pixel-font text-xs text-green-300 font-bold">
                       +{log.durationMinutes}M
                     </div>
-                    <span className={`text-[6px] pixel-font uppercase ${log.completed ? 'text-green-500' : 'text-zinc-500'}`}>
+                    <span className={`text-[6px] pixel-font uppercase ${log.completed ? 'text-green-400' : 'text-zinc-400'}`}>
                       {log.completed ? 'COMPLETED' : 'PARTIAL'}
                     </span>
                   </div>
@@ -404,26 +405,26 @@ const App: React.FC = () => {
         </div>
 
         {/* Section: Matured Trees */}
-        <div className="space-y-3 pt-4 border-t border-green-950/30">
+        <div className="space-y-3 pt-4 border-t border-green-950/40">
           <h2 className="pixel-font text-[10px] sm:text-xs text-green-400 uppercase tracking-widest font-bold flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-green-500" />
             Matured Grove ({completedGoals.length})
           </h2>
 
           {completedGoals.length === 0 ? (
-            <div className="border border-green-950/40 bg-[#061206]/30 p-6 text-center">
-              <p className="pixel-font text-[9px] uppercase tracking-widest text-green-600 font-bold">No Matured Trees Yet</p>
-              <p className="text-green-500/70 text-[10px] mt-1">Nurture a seed to 100% evolution to enter the permanent sanctuary.</p>
+            <div className="border border-green-950/60 bg-[#061206]/40 p-6 text-center">
+              <p className="pixel-font text-[9px] uppercase tracking-widest text-green-400 font-bold">No Matured Trees Yet</p>
+              <p className="text-green-400/80 text-[10px] mt-1">Nurture a seed to 100% evolution to enter the permanent sanctuary.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {completedGoals.map(goal => (
-                <div key={goal.id} className="bg-[#0a160a] border border-green-950/60 p-4 text-center relative group shadow-2xl">
+                <div key={goal.id} className="bg-[#0a160a] border border-green-950/70 p-4 text-center relative group shadow-2xl">
                   <div className="w-24 h-24 mx-auto">
                     <SaplingCanvas goal={goal} size={100} animate={false} />
                   </div>
-                  <h4 className="pixel-font text-[9px] mt-3 text-green-400 uppercase truncate font-bold">{goal.name}</h4>
-                  <div className="mt-1 text-[7px] text-green-600 pixel-font uppercase tracking-widest font-bold">Matured</div>
+                  <h4 className="pixel-font text-[9px] mt-3 text-green-300 uppercase truncate font-bold">{goal.name}</h4>
+                  <div className="mt-1 text-[7px] text-green-400 pixel-font uppercase tracking-widest font-bold">Matured</div>
                 </div>
               ))}
             </div>
@@ -443,10 +444,10 @@ const App: React.FC = () => {
           </span>
         </div>
         <div className="text-right flex flex-col items-end min-w-[90px]">
-           <div className="pixel-font text-[6px] sm:text-[7px] text-green-500 uppercase tracking-widest mb-0.5 font-bold">
+           <div className="pixel-font text-[6px] sm:text-[7px] text-green-400 uppercase tracking-widest mb-0.5 font-bold">
              Total Focus
            </div>
-           <div className="pixel-font text-sm sm:text-base md:text-lg text-green-400 font-bold tracking-tight">
+           <div className="pixel-font text-sm sm:text-base md:text-lg text-green-300 font-bold tracking-tight">
               {Math.floor(profile.totalFocusTime / 60)}H {Math.round(profile.totalFocusTime % 60)}M
            </div>
         </div>
@@ -459,9 +460,10 @@ const App: React.FC = () => {
         {activeTab === 'ani' && <AniChat profile={profile} activeSessionGoal={activeSessionGoal} />}
       </main>
 
+      {/* BOTTOM NAVIGATION WITH CLEAR, CONTRAST-ENHANCED VISIBILITY */}
       <nav 
         aria-label="Main navigation" 
-        className="fixed bottom-0 left-0 right-0 max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto bg-[#040a04]/95 backdrop-blur-md border-t-2 border-green-950/30 p-2 sm:p-3 md:p-4 grid grid-cols-4 gap-1 sm:gap-2 z-[60] pb-safe"
+        className="fixed bottom-0 left-0 right-0 max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto bg-[#040a04]/98 backdrop-blur-md border-t-2 border-green-900/40 p-2 sm:p-3 md:p-4 grid grid-cols-4 gap-1.5 sm:gap-2 z-[60] pb-safe"
       >
         {[
           { id: 'grove', label: 'GROVE', icon: <path d="M7 14l5-5 5 5M12 9v12 M5 5h14v14H5z" stroke="currentColor" fill="none" strokeWidth="2.5" strokeLinecap="round" /> },
@@ -476,21 +478,19 @@ const App: React.FC = () => {
               type="button"
               onClick={() => setActiveTab(tab.id as AppTab)}
               aria-current={isActive ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2 transition-all duration-200 min-h-[48px] ${
-                isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100'
-              }`}
+              className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2 transition-all duration-200 min-h-[48px] group"
             >
               <div className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center border-2 transition-all ${
                 isActive 
-                  ? 'border-green-500 text-green-400 shadow-[0_0_15px_rgba(34,197,94,0.3)] bg-green-500/10' 
-                  : 'border-green-950/60 text-green-600 hover:border-green-800'
+                  ? 'border-green-400 text-green-300 shadow-[0_0_20px_rgba(34,197,94,0.35)] bg-green-500/20' 
+                  : 'border-green-800/70 bg-[#061406] text-green-400 group-hover:text-green-200 group-hover:border-green-600 shadow-sm'
               }`}>
                 <svg width="18" height="18" viewBox="0 0 24 24">
                   {tab.icon}
                 </svg>
               </div>
-              <span className={`pixel-font text-[7px] sm:text-[8px] tracking-widest font-bold ${
-                isActive ? 'text-green-400' : 'text-green-600'
+              <span className={`pixel-font text-[7.5px] sm:text-[8px] tracking-widest font-bold transition-colors ${
+                isActive ? 'text-green-300' : 'text-green-400 group-hover:text-green-200'
               }`}>
                 {tab.label}
               </span>
