@@ -479,23 +479,17 @@ const SaplingAppContent: React.FC = () => {
           <span className="pixel-font text-xl xs:text-2xl md:text-3xl tracking-tighter text-white drop-shadow-md">
             SAPLING
           </span>
-          {/* Subtle Surface / Manifesto Navigation Button */}
+          {/* Universal Surface / Manifesto Navigation Button */}
           <button
             onClick={navigateToLanding}
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 border border-green-900/50 bg-[#061406] text-green-400/80 hover:text-green-200 hover:border-green-600 pixel-font text-[7.5px] uppercase tracking-wider transition-colors ml-2"
-            title="Return to Public Manifesto"
+            className="flex items-center gap-1 px-2.5 py-1 border border-green-800/80 bg-[#061406] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[7.5px] sm:text-[8px] uppercase tracking-wider transition-all ml-1 shadow-sm"
+            title="Return to Public Website / Manifesto"
           >
             <span>← SURFACE</span>
           </button>
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={navigateToLanding}
-            className="sm:hidden text-green-500 hover:text-green-300 pixel-font text-[8px] uppercase tracking-wider border border-green-950 px-2 py-1"
-          >
-            SURFACE
-          </button>
           <div className="text-right flex flex-col items-end min-w-[85px]">
              <div className="pixel-font text-[6px] sm:text-[7px] text-green-400 uppercase tracking-widest mb-0.5 font-bold">
                Total Focus
