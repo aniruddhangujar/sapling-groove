@@ -77,6 +77,8 @@ const SaplingAppContent: React.FC = () => {
     window.location.hash = 'landing';
   }, []);
 
+  const [harvestNotice, setHarvestNotice] = useState<string | null>(null);
+
   const addGoal = (newGoal: Partial<SaplingGoal>) => {
     const created = storageService.addGoal(newGoal);
     setProfile(prev => ({ ...prev, grove: [...prev.grove, created] }));
@@ -86,14 +88,20 @@ const SaplingAppContent: React.FC = () => {
   const handleFocusFinish = (minutes: number, isComplete: boolean, log: FocusSessionLog) => {
     setProfile(prev => {
       let updatedGrove = prev.grove;
+      let harvestedName: string | null = null;
+
       if (activeSessionGoal && activeSessionGoal !== 'pomodoro') {
+        const goalId = (activeSessionGoal as SaplingGoal).id;
         updatedGrove = prev.grove.map(g => {
-          if (g.id === (activeSessionGoal as SaplingGoal).id) {
+          if (g.id === goalId) {
             const newAccrued = g.accruedMinutes + minutes;
-            const complete = newAccrued >= g.totalTargetMinutes;
+            const complete = isComplete || newAccrued >= g.totalTargetMinutes;
+            if (complete) {
+              harvestedName = g.name;
+            }
             return {
               ...g,
-              accruedMinutes: newAccrued,
+              accruedMinutes: complete ? Math.max(newAccrued, g.totalTargetMinutes) : newAccrued,
               lastFocusDate: Date.now(),
               isComplete: complete,
               health: Math.min(100, g.health + 15)
@@ -101,6 +109,10 @@ const SaplingAppContent: React.FC = () => {
           }
           return g;
         });
+      }
+
+      if (harvestedName) {
+        setHarvestNotice(harvestedName);
       }
 
       const newLogs = log.durationMinutes > 0 ? [log, ...prev.logs] : prev.logs;
@@ -171,6 +183,37 @@ const SaplingAppContent: React.FC = () => {
             + NEW SEED
           </PixelButton>
         </div>
+
+        {harvestNotice && (
+          <div className="bg-green-950/70 border-2 border-green-500/50 p-3 sm:p-4 flex items-center justify-between shadow-[0_0_20px_rgba(34,197,94,0.2)] animate-in fade-in">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 bg-green-400 animate-pulse shrink-0" />
+              <div className="text-left">
+                <span className="pixel-font text-[9px] text-green-300 uppercase tracking-wider block font-bold">
+                  FLORA HARVESTED: "{harvestNotice}"
+                </span>
+                <span className="text-[10px] text-green-400/90 font-mono">
+                  Matured to 100% and safely archived in the Sanctuary Logs.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button 
+                onClick={() => { setActiveTab('logs'); setHarvestNotice(null); }}
+                className="pixel-font text-[8px] text-green-300 hover:text-white border border-green-700/60 bg-[#061406] px-2.5 py-1.5 uppercase tracking-widest transition-colors font-bold"
+              >
+                VIEW LOGS →
+              </button>
+              <button 
+                onClick={() => setHarvestNotice(null)}
+                className="text-green-500 hover:text-green-200 px-1.5 text-lg leading-none font-bold"
+                aria-label="Dismiss notice"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
 
         {activeGoals.length === 0 ? (
           <div className="border-2 border-green-900/30 p-8 sm:p-14 md:p-20 text-center bg-[#061206]/50 relative">

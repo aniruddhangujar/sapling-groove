@@ -96,9 +96,9 @@ const GoalModal: React.FC<Props> = ({ onClose, onSubmit }) => {
   const [name, setName] = useState('');
   const [type, setType] = useState<TreeType>(TreeType.OAK);
   const [timeline, setTimeline] = useState<TimelineType>(TimelineType.DAY);
-  const [durationValue, setDurationValue] = useState(2); 
-  const [focusValue, setFocusValue] = useState(4);
-  const [focusUnit, setFocusUnit] = useState<'hrs' | 'mins'>('hrs');
+  const [durationValue, setDurationValue] = useState(1); 
+  const [focusValue, setFocusValue] = useState(25);
+  const [focusUnit, setFocusUnit] = useState<'hrs' | 'mins'>('mins');
 
   const calculateTotalMinutes = () => {
     let days = durationValue;
@@ -129,7 +129,8 @@ const GoalModal: React.FC<Props> = ({ onClose, onSubmit }) => {
        if (andIdx === parts.length - 1) parts.splice(andIdx, 1);
     }
 
-    return `Tree matures upon reaching ${parts.join(' ')} of focused ritual`;
+    const timeStr = parts.length > 0 ? parts.join(' ') : `${totalMinutes} mins`;
+    return `Flora matures and harvests upon reaching ${timeStr} of focused ritual`;
   };
 
   const handleCreate = () => {

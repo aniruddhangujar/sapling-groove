@@ -114,7 +114,12 @@ const FocusSession: React.FC<Props> = ({
   onFinish,
   onCancel
 }) => {
-  const targetDurationSeconds = goal ? goal.dailyTargetMinutes * 60 : 25 * 60;
+  const remainingToMaturityMinutes = goal 
+    ? Math.max(1, goal.totalTargetMinutes - goal.accruedMinutes) 
+    : 25;
+  const targetDurationSeconds = goal 
+    ? Math.min(goal.dailyTargetMinutes, remainingToMaturityMinutes) * 60 
+    : 25 * 60;
   
   const [sessionState, setSessionState] = useState<SessionState>('active');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
@@ -148,12 +153,20 @@ const FocusSession: React.FC<Props> = ({
 
   // Main ritual timer
   const handleRitualComplete = useCallback(() => {
-    if (focusMode === 'chronos') {
-      const minutes = Math.max(1, Math.round(targetDurationSeconds / 60));
-      setAccruedMins(minutes);
+    soundEngine.pause();
+    const minutes = Math.max(1, Math.round(targetDurationSeconds / 60));
+    setAccruedMins(minutes);
+
+    const currentAccrued = goal ? goal.accruedMinutes : 0;
+    const totalTarget = goal ? goal.totalTargetMinutes : minutes;
+    const isMatured = (currentAccrued + minutes) >= totalTarget;
+
+    if (isMatured || focusMode === 'groove') {
+      setSessionState('success');
+    } else {
       setSessionState('break_choice');
     }
-  }, [focusMode, targetDurationSeconds]);
+  }, [focusMode, targetDurationSeconds, goal]);
 
   const timer = useTimer({
     mode: focusMode,
@@ -341,25 +354,34 @@ const FocusSession: React.FC<Props> = ({
   const currentElapsedSeconds = sessionState === 'on_break' ? breakTimer.elapsedSeconds : timer.elapsedSeconds;
   const currentElapsedMins = Math.floor(timer.elapsedSeconds / 60);
 
-  // Success Screen
+  // Success / Harvest Screen
   if (sessionState === 'success') {
+    const isMatured = goal 
+      ? (goal.accruedMinutes + accruedMins >= goal.totalTargetMinutes)
+      : true;
+
     return (
       <div className="fixed inset-0 bg-[#040a04] z-[200] flex flex-col items-center justify-center p-4 sm:p-6 text-center animate-in fade-in duration-500 overflow-y-auto pb-safe">
         <div className="space-y-6 w-full max-w-xs sm:max-w-sm flex flex-col items-center my-auto">
-          <div className="w-12 h-12 bg-green-950/40 border-2 border-green-500/40 flex items-center justify-center shadow-lg">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-green-400">
+          <div className="w-14 h-14 bg-green-950/50 border-2 border-green-500/60 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" className="text-green-400">
               <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="currentColor" />
             </svg>
           </div>
-          <div>
-            <h1 className="pixel-font text-sm sm:text-base md:text-lg text-white uppercase tracking-[0.25em]">
-              Ritual Complete
+          <div className="space-y-1">
+            <span className="inline-block pixel-font text-[8px] sm:text-[9px] text-green-400 uppercase tracking-widest px-2.5 py-1 bg-green-950/60 border border-green-800/60">
+              {isMatured ? 'FLORA HARVESTED' : 'RITUAL SYNTHESIZED'}
+            </span>
+            <h1 className="pixel-font text-base sm:text-lg md:text-xl text-white uppercase tracking-[0.2em] pt-1">
+              {isMatured ? 'HARVEST COMPLETE' : 'RITUAL COMPLETE'}
             </h1>
-            <p className="pixel-font text-[9px] text-green-400 uppercase tracking-widest mt-1.5 font-bold">
-              Growth Synthesized: +{accruedMins}M
+            <p className="pixel-font text-[9px] text-green-300 uppercase tracking-widest mt-1 font-bold">
+              {isMatured 
+                ? `Flora Matured to 100% (+${accruedMins}M Focused)` 
+                : `Growth Synthesized: +${accruedMins}M`}
             </p>
           </div>
-          <div className="bg-[#0a160a] border-2 border-green-950/60 w-52 h-52 sm:w-60 sm:h-60 flex items-center justify-center relative shadow-2xl overflow-hidden p-2">
+          <div className="bg-[#0a160a] border-2 border-green-500/40 w-52 h-52 sm:w-60 sm:h-60 flex items-center justify-center relative shadow-[0_0_30px_rgba(34,197,94,0.2)] overflow-hidden p-2">
             <SaplingCanvas
               goal={activeGoalForCanvas}
               size={220}
@@ -367,11 +389,11 @@ const FocusSession: React.FC<Props> = ({
             />
           </div>
           <PixelButton
-            onClick={() => handleFinishSession(true)}
+            onClick={() => handleFinishSession(isMatured)}
             variant="success"
-            className="w-full py-4 text-[11px] tracking-widest mt-2 h-12"
+            className="w-full py-4 text-[10px] sm:text-[11px] tracking-widest mt-2 h-12 shadow-lg"
           >
-            RETURN TO THE GROVE
+            {isMatured ? 'HARVEST & RETURN TO GROVE' : 'RETURN TO THE GROVE'}
           </PixelButton>
         </div>
       </div>
@@ -653,7 +675,12 @@ const FocusSession: React.FC<Props> = ({
                   if (timer.isRunning) {
                     timer.pause();
                   } else {
-                    timer.resume();
+                    if (timer.isComplete) {
+                      timer.reset();
+                      timer.start();
+                    } else {
+                      timer.resume();
+                    }
                   }
                 }}
                 className="flex-1 py-3 text-[9px] sm:text-[10px] tracking-[0.2em] h-12 shadow-lg"

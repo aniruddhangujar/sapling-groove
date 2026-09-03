@@ -28,17 +28,18 @@ interface TimerControls extends TimerState {
  * Resistant to tab switching, browser throttling, and mobile backgrounding.
  * UI updates every ~250ms to balance accuracy and performance.
  */
-export function useTimer({ mode, targetSeconds = 25 * 60, onComplete }: TimerOptions): TimerControls {
+export function useTimer({ mode, targetSeconds, onComplete }: TimerOptions): TimerControls {
+  const initialTargetSeconds = targetSeconds ?? (mode === 'chronos' ? 25 * 60 : undefined);
   const [isRunning, setIsRunning] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [displaySeconds, setDisplaySeconds] = useState(
-    mode === 'chronos' ? targetSeconds : 0
+    mode === 'chronos' ? (initialTargetSeconds ?? 25 * 60) : 0
   );
 
   // Timestamp refs — authoritative source of truth
   const startTimeRef = useRef<number | null>(null);
   const pausedElapsedRef = useRef(0); // Accumulated elapsed time before current run
-  const targetSecondsRef = useRef(targetSeconds);
+  const targetSecondsRef = useRef<number | undefined>(initialTargetSeconds);
   const onCompleteRef = useRef(onComplete);
   const modeRef = useRef(mode);
 
@@ -48,8 +49,8 @@ export function useTimer({ mode, targetSeconds = 25 * 60, onComplete }: TimerOpt
   }, [onComplete]);
 
   useEffect(() => {
-    targetSecondsRef.current = targetSeconds;
-  }, [targetSeconds]);
+    targetSecondsRef.current = targetSeconds ?? (mode === 'chronos' ? 25 * 60 : undefined);
+  }, [targetSeconds, mode]);
 
   useEffect(() => {
     modeRef.current = mode;
@@ -70,7 +71,8 @@ export function useTimer({ mode, targetSeconds = 25 * 60, onComplete }: TimerOpt
       const elapsed = getElapsed();
 
       if (modeRef.current === 'chronos') {
-        const remaining = Math.max(0, targetSecondsRef.current - elapsed);
+        const target = targetSecondsRef.current ?? (25 * 60);
+        const remaining = Math.max(0, target - elapsed);
         setDisplaySeconds(Math.ceil(remaining));
 
         if (remaining <= 0) {
@@ -78,12 +80,23 @@ export function useTimer({ mode, targetSeconds = 25 * 60, onComplete }: TimerOpt
           setIsComplete(true);
           setDisplaySeconds(0);
           startTimeRef.current = null;
-          pausedElapsedRef.current = targetSecondsRef.current;
+          pausedElapsedRef.current = target;
           onCompleteRef.current?.();
           return;
         }
       } else {
-        // Groove: count up
+        // Groove: count up until target deadline (if defined) or open-ended
+        const target = targetSecondsRef.current;
+        if (target && target > 0 && elapsed >= target) {
+          setIsRunning(false);
+          setIsComplete(true);
+          setDisplaySeconds(Math.floor(target));
+          startTimeRef.current = null;
+          pausedElapsedRef.current = target;
+          onCompleteRef.current?.();
+          return;
+        }
+
         setDisplaySeconds(Math.floor(elapsed));
       }
     };
@@ -101,7 +114,7 @@ export function useTimer({ mode, targetSeconds = 25 * 60, onComplete }: TimerOpt
     setIsComplete(false);
     setIsRunning(true);
     if (modeRef.current === 'chronos') {
-      setDisplaySeconds(targetSecondsRef.current);
+      setDisplaySeconds(targetSecondsRef.current ?? 25 * 60);
     } else {
       setDisplaySeconds(0);
     }
@@ -127,7 +140,7 @@ export function useTimer({ mode, targetSeconds = 25 * 60, onComplete }: TimerOpt
     setIsRunning(false);
     setIsComplete(false);
     if (modeRef.current === 'chronos') {
-      setDisplaySeconds(targetSecondsRef.current);
+      setDisplaySeconds(targetSecondsRef.current ?? 25 * 60);
     } else {
       setDisplaySeconds(0);
     }
@@ -139,8 +152,9 @@ export function useTimer({ mode, targetSeconds = 25 * 60, onComplete }: TimerOpt
 
   // Progress for Chronos ring visualization
   const elapsedSeconds = getElapsed();
+  const effectiveTarget = targetSeconds ?? 25 * 60;
   const progress = mode === 'chronos'
-    ? Math.max(0, Math.min(1, 1 - (elapsedSeconds / targetSeconds)))
+    ? Math.max(0, Math.min(1, 1 - (elapsedSeconds / effectiveTarget)))
     : 0;
 
   return {
