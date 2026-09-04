@@ -547,8 +547,8 @@ const FocusSession: React.FC<Props> = ({
                 <h2 className="pixel-font text-3xl xs:text-4xl sm:text-5xl text-white select-none tracking-tighter leading-none shadow-md">
                   {formatTime(displayTimerSeconds)}
                 </h2>
-                <span className="pixel-font text-[7.5px] sm:text-[8px] text-green-400 uppercase mt-3 tracking-widest font-bold">
-                  {isTimerRunning ? 'Ritual Active' : 'Paused'}
+                <span className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase mt-2.5 sm:mt-3 tracking-wider font-bold">
+                  {isTimerRunning ? 'Active' : 'Paused'}
                 </span>
               </div>
             </div>
