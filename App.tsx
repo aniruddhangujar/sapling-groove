@@ -453,7 +453,7 @@ const SaplingAppContent: React.FC = () => {
     };
 
     return (
-      <div className="p-3 sm:p-6 md:p-10 flex flex-col min-h-full space-y-4 sm:space-y-6 animate-in fade-in duration-700 hud-grid max-w-xl mx-auto justify-between pb-8">
+      <div className="p-3 xs:p-4 sm:p-6 flex flex-col min-h-full space-y-3 sm:space-y-5 animate-in fade-in duration-700 hud-grid max-w-xl mx-auto justify-between pb-3 sm:pb-4">
         <div className="text-center space-y-2 sm:space-y-3">
            <h1 className="pixel-font text-base xs:text-lg sm:text-2xl md:text-3xl text-white uppercase tracking-[0.2em] sm:tracking-[0.4em]">
              Pomo Utility
@@ -466,7 +466,7 @@ const SaplingAppContent: React.FC = () => {
               <button 
                 type="button"
                 onClick={() => setUtilityMode('chronos')}
-                className={`px-4 xs:px-5 sm:px-8 py-2 sm:py-3 border-2 pixel-font text-[7.5px] sm:text-[9px] uppercase tracking-widest transition-all min-h-[40px] sm:min-h-[44px] ${
+                className={`px-4 xs:px-5 sm:px-8 py-2 sm:py-2.5 border-2 pixel-font text-[7.5px] sm:text-[9px] uppercase tracking-widest transition-all min-h-[38px] sm:min-h-[42px] ${
                   utilityMode === 'chronos' 
                     ? 'border-green-400 bg-green-950/50 text-white shadow-[0_0_20px_rgba(34,197,94,0.25)] font-bold' 
                     : 'border-green-800/60 bg-[#061406] text-green-400 hover:text-green-200 hover:border-green-600'
@@ -477,7 +477,7 @@ const SaplingAppContent: React.FC = () => {
               <button 
                 type="button"
                 onClick={() => setUtilityMode('groove')}
-                className={`px-4 xs:px-5 sm:px-8 py-2 sm:py-3 border-2 pixel-font text-[7.5px] sm:text-[9px] uppercase tracking-widest transition-all min-h-[40px] sm:min-h-[44px] ${
+                className={`px-4 xs:px-5 sm:px-8 py-2 sm:py-2.5 border-2 pixel-font text-[7.5px] sm:text-[9px] uppercase tracking-widest transition-all min-h-[38px] sm:min-h-[42px] ${
                   utilityMode === 'groove' 
                     ? 'border-green-400 bg-green-950/50 text-white shadow-[0_0_20px_rgba(34,197,94,0.25)] font-bold' 
                     : 'border-green-800/60 bg-[#061406] text-green-400 hover:text-green-200 hover:border-green-600'
@@ -490,7 +490,7 @@ const SaplingAppContent: React.FC = () => {
 
         {/* Comfortable Spacing for Circular Timer Viewport */}
         <div className="relative flex flex-col items-center justify-center my-auto py-1 sm:py-2">
-           <div className="relative w-48 xs:w-56 sm:w-72 h-48 xs:h-56 sm:h-72 flex items-center justify-center bg-[#061206]/70 border-2 border-green-950/60 shadow-2xl group overflow-hidden p-3 sm:p-6">
+           <div className="relative w-48 xs:w-56 sm:w-64 md:w-68 h-48 xs:h-56 sm:h-64 md:h-68 flex items-center justify-center bg-[#061206]/70 border-2 border-green-950/60 shadow-2xl group overflow-hidden p-3 sm:p-6">
               <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-green-500/50 group-hover:border-green-400 transition-all z-20" />
               <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b-2 border-r-2 border-green-500/50 group-hover:border-green-400 transition-all z-20" />
 
@@ -536,11 +536,11 @@ const SaplingAppContent: React.FC = () => {
            </div>
         </div>
 
-        <div className="pt-2 pb-4 w-full">
+        <div className="pt-2 pb-1 w-full">
           <PixelButton 
             onClick={startUtilityRitual} 
             variant="success"
-            className="w-full py-3.5 sm:py-5 text-[9px] xs:text-[10px] sm:text-xs border-2 tracking-[0.2em] sm:tracking-[0.4em] uppercase shadow-[0_10px_40px_rgba(34,197,94,0.2)] h-12 sm:h-14"
+            className="w-full py-3 sm:py-4 text-[9px] xs:text-[10px] sm:text-xs border-2 tracking-[0.2em] sm:tracking-[0.4em] uppercase shadow-[0_10px_40px_rgba(34,197,94,0.2)] h-11 sm:h-12"
           >
             {utilityMode === 'chronos' ? 'BEGIN CYCLE' : 'COMMENCE GROOVE'}
           </PixelButton>
