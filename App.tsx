@@ -24,14 +24,23 @@ const SaplingLogo: React.FC = () => (
   </div>
 );
 
+const parseViewMode = (rawHash: string): AppViewMode => {
+  if (!rawHash) return 'landing';
+  const clean = rawHash.replace(/^#\/?/, '').toLowerCase().trim();
+  const segment = clean.split('?')[0].split('/')[0];
+  if (segment === 'app' || segment === 'grove') {
+    return 'app';
+  }
+  return 'landing';
+};
+
 const SaplingAppContent: React.FC = () => {
   const { showAuthModal, setShowAuthModal, user, isAuthenticated } = useAuth();
 
   // Determine initial view from URL hash
   const [viewMode, setViewMode] = useState<AppViewMode>(() => {
     if (typeof window !== 'undefined') {
-      const hash = window.location.hash.toLowerCase();
-      if (hash === '#app' || hash === '#grove') return 'app';
+      return parseViewMode(window.location.hash);
     }
     return 'landing';
   });
@@ -44,29 +53,49 @@ const SaplingAppContent: React.FC = () => {
   const [sessionMode, setSessionMode] = useState<FocusMode>('chronos');
   const [pomoVisualMode, setPomoVisualMode] = useState<PomoVisualMode>('clock');
   const [utilityMode, setUtilityMode] = useState<FocusMode>('chronos');
+  const [harvestNotice, setHarvestNotice] = useState<string | null>(null);
+  const [selectedGroveGoalId, setSelectedGroveGoalId] = useState<string | null>(null);
+
+  const dummySeedGoal: SaplingGoal = useMemo(() => ({
+    id: 'empty-seed-preview',
+    name: 'New Intention',
+    type: TreeType.OAK,
+    timeline: TimelineType.DAY,
+    startDate: Date.now(),
+    durationInDays: 1,
+    dailyTargetMinutes: 25,
+    totalTargetMinutes: 25,
+    accruedMinutes: 0,
+    isComplete: false,
+    health: 100,
+    perfectionScore: 1.0
+  }), []);
 
   // Sync profile changes to storage
   useEffect(() => {
     storageService.saveProfile(profile);
   }, [profile]);
 
-  // Handle URL hash changes
+  // Handle URL hash and browser history navigation (Back / Forward / direct links)
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.toLowerCase();
-      if (hash === '#app' || hash === '#grove') {
-        setViewMode('app');
-      } else if (hash === '#landing' || hash === '#manifesto' || hash === '') {
-        setViewMode('landing');
-      }
+    const handleNavigation = () => {
+      const targetView = parseViewMode(window.location.hash);
+      setViewMode(targetView);
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('hashchange', handleNavigation);
+    window.addEventListener('popstate', handleNavigation);
+    return () => {
+      window.removeEventListener('hashchange', handleNavigation);
+      window.removeEventListener('popstate', handleNavigation);
+    };
   }, []);
 
   const navigateToApp = useCallback((options?: { openNewSeed?: boolean; presetTree?: TreeType; presetName?: string }) => {
     setViewMode('app');
-    window.location.hash = 'app';
+    const targetHash = '#/app';
+    if (window.location.hash !== targetHash && window.location.hash !== '#app') {
+      window.location.hash = targetHash;
+    }
     if (options?.openNewSeed) {
       setShowGoalModal(true);
     }
@@ -74,10 +103,11 @@ const SaplingAppContent: React.FC = () => {
 
   const navigateToLanding = useCallback(() => {
     setViewMode('landing');
-    window.location.hash = 'landing';
+    const targetHash = '#/';
+    if (window.location.hash !== targetHash && window.location.hash !== '') {
+      window.location.hash = targetHash;
+    }
   }, []);
-
-  const [harvestNotice, setHarvestNotice] = useState<string | null>(null);
 
   const addGoal = (newGoal: Partial<SaplingGoal>) => {
     const created = storageService.addGoal(newGoal);
@@ -162,22 +192,6 @@ const SaplingAppContent: React.FC = () => {
 
   // --- APPLICATION MODE ---
 
-  const [selectedGroveGoalId, setSelectedGroveGoalId] = useState<string | null>(null);
-
-  const dummySeedGoal: SaplingGoal = useMemo(() => ({
-    id: 'empty-seed-preview',
-    name: 'New Intention',
-    type: TreeType.OAK,
-    timeline: TimelineType.DAY,
-    startDate: Date.now(),
-    durationInDays: 1,
-    dailyTargetMinutes: 25,
-    totalTargetMinutes: 25,
-    accruedMinutes: 0,
-    isComplete: false,
-    health: 100,
-    perfectionScore: 1.0
-  }), []);
 
   const renderGrove = () => {
     const activeGoals = profile.grove.filter(g => !g.isComplete);
