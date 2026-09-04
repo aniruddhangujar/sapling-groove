@@ -14,9 +14,9 @@ const SanctuaryModal = lazy(() => import('./components/SanctuaryModal'));
 const AuthModal = lazy(() => import('./components/AuthModal'));
 
 const SaplingLogo: React.FC = () => (
-  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#061206] border-2 border-green-800/40 flex items-center justify-center relative shadow-[0_0_20px_rgba(34,197,94,0.15)] overflow-hidden shrink-0">
+  <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 bg-[#061206] border-2 border-green-800/40 flex items-center justify-center relative shadow-[0_0_20px_rgba(34,197,94,0.15)] overflow-hidden shrink-0">
     <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle,#22c55e_0.5px,transparent_0.5px)] bg-[length:3px_3px]" />
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="xs:w-5 xs:h-5 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]">
       <path d="M12 21V9M12 9C12 9 8 5 4 5C4 5 4 8 8 11M12 9C12 9 16 5 20 5C20 5 20 8 16 11" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
       <circle cx="12" cy="7" r="1.5" fill="#4ade80" />
       <path d="M12 21C12 21 15 21 17 19M12 21C12 21 9 21 7 19" stroke="#4ade80" strokeWidth="1.5" strokeLinecap="round" />
@@ -324,7 +324,7 @@ const SaplingAppContent: React.FC = () => {
     };
 
     return (
-      <div className="p-3.5 sm:p-6 md:p-10 flex flex-col h-full space-y-4 sm:space-y-6 animate-in fade-in duration-700 hud-grid max-w-xl mx-auto justify-between">
+      <div className="p-3 sm:p-6 md:p-10 flex flex-col min-h-full space-y-4 sm:space-y-6 animate-in fade-in duration-700 hud-grid max-w-xl mx-auto justify-between pb-8">
         <div className="text-center space-y-2 sm:space-y-3">
            <h1 className="pixel-font text-base xs:text-lg sm:text-2xl md:text-3xl text-white uppercase tracking-[0.2em] sm:tracking-[0.4em]">
              Pomo Utility
@@ -361,7 +361,7 @@ const SaplingAppContent: React.FC = () => {
 
         {/* Comfortable Spacing for Circular Timer Viewport */}
         <div className="relative flex flex-col items-center justify-center my-auto py-1 sm:py-2">
-           <div className="relative w-56 xs:w-64 sm:w-76 h-56 xs:h-64 sm:h-76 flex items-center justify-center bg-[#061206]/70 border-2 border-green-950/60 shadow-2xl group overflow-hidden p-3 sm:p-6">
+           <div className="relative w-48 xs:w-56 sm:w-72 h-48 xs:h-56 sm:h-72 flex items-center justify-center bg-[#061206]/70 border-2 border-green-950/60 shadow-2xl group overflow-hidden p-3 sm:p-6">
               <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t-2 border-l-2 border-green-500/50 group-hover:border-green-400 transition-all z-20" />
               <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b-2 border-r-2 border-green-500/50 group-hover:border-green-400 transition-all z-20" />
 
@@ -379,10 +379,10 @@ const SaplingAppContent: React.FC = () => {
                         />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <h2 className="pixel-font text-3xl xs:text-4xl sm:text-5xl text-white select-none tracking-tighter leading-none shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+                        <h2 className="pixel-font text-2xl xs:text-3xl sm:text-5xl text-white select-none tracking-tighter leading-none shadow-[0_0_10px_rgba(0,0,0,0.5)]">
                           25:00
                         </h2>
-                        <span className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase mt-3 sm:mt-5 tracking-[0.25em] font-bold">
+                        <span className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase mt-2 sm:mt-5 tracking-[0.2em] font-bold">
                           Countdown Ready
                         </span>
                       </div>
@@ -392,10 +392,10 @@ const SaplingAppContent: React.FC = () => {
                 <div className="absolute inset-0 flex flex-col items-center justify-between p-3 sm:p-4 bg-[#040a04] animate-in zoom-in-95 fade-in duration-300">
                   <div className="z-20 px-2.5 py-1 bg-[#050c05]/95 border border-green-800/70 pixel-corners shadow-md flex items-center gap-2 mt-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    <span className="pixel-font text-sm xs:text-base sm:text-lg text-white tracking-tight">00:00 → ∞</span>
+                    <span className="pixel-font text-xs xs:text-sm sm:text-base text-white tracking-tight">00:00 → ∞</span>
                   </div>
                   <div className="relative flex items-center justify-center flex-1 my-auto">
-                    <SaplingCanvas goal={dummyGoal} size={180} />
+                    <SaplingCanvas goal={dummyGoal} size={160} />
                   </div>
                   <div className="z-20 text-center mb-1">
                     <span className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase tracking-[0.2em] font-bold">
@@ -407,13 +407,15 @@ const SaplingAppContent: React.FC = () => {
            </div>
         </div>
 
-        <PixelButton 
-          onClick={startUtilityRitual} 
-          variant="success"
-          className="w-full py-4 sm:py-5 text-[10px] sm:text-xs border-2 tracking-[0.25em] sm:tracking-[0.4em] uppercase shadow-[0_10px_40px_rgba(34,197,94,0.2)] h-12 sm:h-14"
-        >
-          {utilityMode === 'chronos' ? 'BEGIN CYCLE' : 'COMMENCE GROOVE'}
-        </PixelButton>
+        <div className="pt-2 pb-4 w-full">
+          <PixelButton 
+            onClick={startUtilityRitual} 
+            variant="success"
+            className="w-full py-3.5 sm:py-5 text-[9px] xs:text-[10px] sm:text-xs border-2 tracking-[0.2em] sm:tracking-[0.4em] uppercase shadow-[0_10px_40px_rgba(34,197,94,0.2)] h-12 sm:h-14"
+          >
+            {utilityMode === 'chronos' ? 'BEGIN CYCLE' : 'COMMENCE GROOVE'}
+          </PixelButton>
+        </div>
       </div>
     );
   };
@@ -520,28 +522,29 @@ const SaplingAppContent: React.FC = () => {
 
   return (
     <div className="h-screen h-[100dvh] flex flex-col max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto border-x-2 border-green-950/30 bg-[#040a04] relative shadow-2xl overflow-hidden">
-      <header className="px-4 py-3.5 sm:px-6 sm:py-4 md:px-8 md:py-5 border-b-2 border-green-950/20 flex justify-between items-center bg-[#040a04]/95 backdrop-blur-md sticky top-0 z-[60] pt-safe">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <header className="px-2.5 xs:px-4 py-2.5 sm:px-6 sm:py-4 md:px-8 md:py-5 border-b-2 border-green-950/20 flex justify-between items-center bg-[#040a04]/95 backdrop-blur-md sticky top-0 z-[60] pt-safe">
+        <div className="flex items-center gap-1.5 xs:gap-3 sm:gap-4 min-w-0">
           <SaplingLogo />
-          <span className="pixel-font text-xl xs:text-2xl md:text-3xl tracking-tighter text-white drop-shadow-md">
+          <span className="pixel-font text-sm xs:text-lg sm:text-2xl md:text-3xl tracking-tight xs:tracking-tighter text-white drop-shadow-md shrink-0">
             SAPLING
           </span>
           {/* Universal Surface / Manifesto Navigation Button */}
           <button
             onClick={navigateToLanding}
-            className="flex items-center gap-1 px-2.5 py-1 border border-green-800/80 bg-[#061406] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[7.5px] sm:text-[8px] uppercase tracking-wider transition-all ml-1 shadow-sm"
+            className="flex items-center gap-1 px-1.5 xs:px-2.5 py-1 border border-green-800/80 bg-[#061406] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[7px] xs:text-[7.5px] sm:text-[8px] uppercase tracking-wider transition-all ml-0.5 xs:ml-1 shrink-0 shadow-sm"
             title="Return to Public Website / Manifesto"
           >
-            <span>← SURFACE</span>
+            <span className="hidden xs:inline">← SURFACE</span>
+            <span className="xs:hidden">← SURF</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="text-right flex flex-col items-end min-w-[85px]">
-             <div className="pixel-font text-[6px] sm:text-[7px] text-green-400 uppercase tracking-widest mb-0.5 font-bold">
+        <div className="flex items-center shrink-0 ml-1.5 xs:ml-3">
+          <div className="text-right flex flex-col items-end">
+             <div className="pixel-font text-[6px] sm:text-[7px] text-green-400 uppercase tracking-widest mb-0.5 font-bold whitespace-nowrap">
                Total Focus
              </div>
-             <div className="pixel-font text-sm sm:text-base md:text-lg text-green-300 font-bold tracking-tight">
+             <div className="pixel-font text-xs xs:text-sm sm:text-base md:text-lg text-green-300 font-bold tracking-tight whitespace-nowrap">
                 {Math.floor(profile.totalFocusTime / 60)}H {Math.round(profile.totalFocusTime % 60)}M
              </div>
           </div>
@@ -569,7 +572,7 @@ const SaplingAppContent: React.FC = () => {
       {/* BOTTOM NAVIGATION WITH CLEAR, CONTRAST-ENHANCED VISIBILITY */}
       <nav 
         aria-label="Main navigation" 
-        className="fixed bottom-0 left-0 right-0 max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto bg-[#040a04]/98 backdrop-blur-md border-t-2 border-green-900/40 p-2 sm:p-3 md:p-4 grid grid-cols-4 gap-1.5 sm:gap-2 z-[60] pb-safe"
+        className="fixed bottom-0 left-0 right-0 max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto bg-[#040a04]/98 backdrop-blur-md border-t-2 border-green-900/40 px-1.5 py-1.5 xs:p-2 sm:p-3 md:p-4 grid grid-cols-4 gap-1 sm:gap-2 z-[60] pb-safe"
       >
         {[
           { id: 'grove', label: 'GROVE', icon: <path d="M7 14l5-5 5 5M12 9v12 M5 5h14v14H5z" stroke="currentColor" fill="none" strokeWidth="2.5" strokeLinecap="round" /> },
@@ -584,18 +587,18 @@ const SaplingAppContent: React.FC = () => {
               type="button"
               onClick={() => setActiveTab(tab.id as AppTab)}
               aria-current={isActive ? 'page' : undefined}
-              className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2 transition-all duration-200 min-h-[48px] group"
+              className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-1 sm:py-2 transition-all duration-200 min-h-[44px] group"
             >
-              <div className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center border-2 transition-all ${
+              <div className={`w-8 h-8 xs:w-9 xs:h-9 sm:w-11 sm:h-11 flex items-center justify-center border-2 transition-all ${
                 isActive 
                   ? 'border-green-400 text-green-300 shadow-[0_0_20px_rgba(34,197,94,0.35)] bg-green-500/20' 
                   : 'border-green-800/70 bg-[#061406] text-green-400 group-hover:text-green-200 group-hover:border-green-600 shadow-sm'
               }`}>
-                <svg width="18" height="18" viewBox="0 0 24 24">
+                <svg width="15" height="15" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24">
                   {tab.icon}
                 </svg>
               </div>
-              <span className={`pixel-font text-[7.5px] sm:text-[8px] tracking-widest font-bold transition-colors ${
+              <span className={`pixel-font text-[6.5px] xs:text-[7.5px] sm:text-[8px] tracking-wider xs:tracking-widest font-bold transition-colors ${
                 isActive ? 'text-green-300' : 'text-green-400 group-hover:text-green-200'
               }`}>
                 {tab.label}

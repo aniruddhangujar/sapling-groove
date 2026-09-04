@@ -496,7 +496,7 @@ const FocusSession: React.FC<Props> = ({
       </div>
 
       {/* RITUAL VIEWPORT — Comfortable Internal Padding & Spacing */}
-      <div className="relative w-full max-w-[270px] xs:max-w-[290px] sm:max-w-[320px] md:max-w-[340px] aspect-square mx-auto border-2 border-green-950/60 bg-[#061206]/70 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.85)] overflow-hidden my-auto shrink-0 p-3 sm:p-5">
+      <div className="relative w-full max-w-[250px] xs:max-w-[280px] sm:max-w-[320px] md:max-w-[340px] max-h-[38vh] sm:max-h-none aspect-square mx-auto border-2 border-green-950/60 bg-[#061206]/70 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.85)] overflow-hidden my-auto shrink-0 p-2.5 xs:p-3 sm:p-5">
         {/* Subtle Background Watermark */}
         <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
           <span className="pixel-font text-xs uppercase tracking-[2em] text-green-500">
@@ -598,7 +598,7 @@ const FocusSession: React.FC<Props> = ({
         </div>
 
         {/* Action Controls */}
-        <div className="w-full flex justify-between items-center gap-2 sm:gap-3 px-2">
+        <div className="w-full flex justify-between items-center gap-1.5 xs:gap-2 sm:gap-3 px-1 xs:px-2">
           {/* Sound / Music Toggle Button */}
           <button
             onClick={handleToggleSound}
@@ -606,7 +606,7 @@ const FocusSession: React.FC<Props> = ({
               e.preventDefault();
               setShowSettings(true);
             }}
-            className={`w-12 h-12 border-2 transition-all bg-[#0a160a] pixel-corners flex items-center justify-center shrink-0 shadow-md ${
+            className={`w-10 h-10 xs:w-11 xs:h-11 sm:w-12 sm:h-12 border-2 transition-all bg-[#0a160a] pixel-corners flex items-center justify-center shrink-0 shadow-md ${
               isMusicEnabled && selectedMusic.id !== 'none'
                 ? 'border-green-400 text-green-300 bg-green-950/40 shadow-[0_0_15px_rgba(34,197,94,0.2)]'
                 : 'border-green-900/60 text-green-600 hover:border-green-700'
@@ -614,7 +614,7 @@ const FocusSession: React.FC<Props> = ({
             aria-label={isMusicEnabled ? `Ambient Audio: ${selectedMusic.name}` : "Sound Muted"}
             title="Click to toggle sound, or open sound settings"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="18" height="18" className="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
               {isMusicEnabled && selectedMusic.id !== 'none' ? (
                 <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
               ) : (
@@ -626,7 +626,7 @@ const FocusSession: React.FC<Props> = ({
           {/* Sound Settings Gear Button */}
           <button
             onClick={() => setShowSettings(true)}
-            className="w-10 h-12 border-2 border-green-900/50 bg-[#061206] text-green-400 hover:border-green-600 hover:text-green-200 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md text-xs pixel-font"
+            className="w-8 h-10 xs:w-9 xs:h-11 sm:w-10 sm:h-12 border-2 border-green-900/50 bg-[#061206] text-green-400 hover:border-green-600 hover:text-green-200 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md text-xs pixel-font"
             aria-label="Select ambient soundscape"
             title="Select soundscape"
           >
@@ -644,7 +644,7 @@ const FocusSession: React.FC<Props> = ({
                   breakTimer.resume();
                 }
               }}
-              className="flex-1 py-3.5 text-[10px] sm:text-[11px] tracking-[0.25em] h-12 shadow-lg"
+              className="flex-1 py-2.5 xs:py-3 sm:py-3.5 text-[9px] xs:text-[10px] sm:text-[11px] tracking-[0.15em] xs:tracking-[0.25em] h-10 xs:h-11 sm:h-12 shadow-lg"
             >
               {breakTimer.isRunning ? 'PAUSE REST' : 'RESUME REST'}
             </PixelButton>
@@ -663,12 +663,12 @@ const FocusSession: React.FC<Props> = ({
                   }
                 }
               }}
-              className="flex-1 py-3.5 text-[10px] sm:text-[11px] tracking-[0.25em] h-12 shadow-lg"
+              className="flex-1 py-2.5 xs:py-3 sm:py-3.5 text-[9px] xs:text-[10px] sm:text-[11px] tracking-[0.15em] xs:tracking-[0.25em] h-10 xs:h-11 sm:h-12 shadow-lg"
             >
               {timer.isRunning ? 'HALT' : 'COMMENCE'}
             </PixelButton>
           ) : (
-            <div className="flex-1 flex gap-2">
+            <div className="flex-1 flex gap-1.5 xs:gap-2">
               <PixelButton
                 variant={timer.isRunning ? 'secondary' : 'primary'}
                 onClick={() => {
@@ -683,14 +683,14 @@ const FocusSession: React.FC<Props> = ({
                     }
                   }
                 }}
-                className="flex-1 py-3 text-[9px] sm:text-[10px] tracking-[0.2em] h-12 shadow-lg"
+                className="flex-1 py-2.5 xs:py-3 text-[8.5px] xs:text-[9px] sm:text-[10px] tracking-[0.15em] xs:tracking-[0.2em] h-10 xs:h-11 sm:h-12 shadow-lg"
               >
                 {timer.isRunning ? 'PAUSE' : 'GROW'}
               </PixelButton>
               <PixelButton
                 variant="success"
                 onClick={handleGrooveEndRitual}
-                className="flex-1 py-3 text-[9px] sm:text-[10px] tracking-[0.2em] h-12 shadow-lg whitespace-nowrap"
+                className="flex-1 py-2.5 xs:py-3 text-[8.5px] xs:text-[9px] sm:text-[10px] tracking-[0.15em] xs:tracking-[0.2em] h-10 xs:h-11 sm:h-12 shadow-lg whitespace-nowrap"
               >
                 HARVEST
               </PixelButton>
@@ -700,10 +700,10 @@ const FocusSession: React.FC<Props> = ({
           {/* Exit Button */}
           <button
             onClick={handleAutoSaveExit}
-            className="w-12 h-12 border-2 border-green-950 bg-[#0a160a] text-green-500 hover:text-red-400 hover:border-red-900/60 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md"
+            className="w-10 h-10 xs:w-11 xs:h-11 sm:w-12 sm:h-12 border-2 border-green-950 bg-[#0a160a] text-green-500 hover:text-red-400 hover:border-red-900/60 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md"
             aria-label="Exit Session"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg width="18" height="18" className="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>

@@ -110,26 +110,26 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none hud-grid" />
 
       {/* Header Bar */}
-      <div className="px-3.5 sm:px-6 py-2.5 sm:py-3 border-b-2 border-green-950/60 bg-[#040a04]/95 backdrop-blur-md flex items-center justify-between z-10 shrink-0">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 border-2 border-green-900/60 bg-[#061206] flex items-center justify-center relative shadow-[0_0_15px_rgba(34,197,94,0.15)] shrink-0">
+      <div className="px-2.5 xs:px-4 sm:px-6 py-2 sm:py-3 border-b-2 border-green-950/60 bg-[#040a04]/95 backdrop-blur-md flex items-center justify-between z-10 shrink-0 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-green-900/60 bg-[#061206] flex items-center justify-center relative shadow-[0_0_15px_rgba(34,197,94,0.15)] shrink-0">
              <div className="absolute -top-0.5 -left-0.5 w-1 h-1 bg-green-500" />
              <div className="absolute -bottom-0.5 -right-0.5 w-1 h-1 bg-green-500" />
-             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-400">
+             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-400 sm:w-[18px] sm:h-[18px]">
               <circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/>
             </svg>
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="pixel-font text-xs sm:text-sm tracking-wider uppercase font-bold text-white truncate">
+            <div className="flex items-center gap-1.5 xs:gap-2">
+              <h2 className="pixel-font text-xs sm:text-sm tracking-wider uppercase font-bold text-white shrink-0">
                 ANI
               </h2>
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 border border-green-900/50 bg-[#061406] text-[6.5px] sm:text-[7px] pixel-font text-green-400 font-bold uppercase tracking-wider">
+              <span className="hidden xs:inline-flex items-center gap-1 px-1.5 py-0.5 border border-green-900/50 bg-[#061406] text-[6.5px] sm:text-[7px] pixel-font text-green-400 font-bold uppercase tracking-wider shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                 GROVE COMPANION
               </span>
             </div>
-            <p className="pixel-font text-[6.5px] sm:text-[7.5px] text-green-500 uppercase tracking-widest font-bold truncate mt-0.5">
+            <p className="pixel-font text-[6px] xs:text-[6.5px] sm:text-[7.5px] text-green-500 uppercase tracking-widest font-bold truncate mt-0.5 max-w-[140px] xs:max-w-[220px] sm:max-w-none">
               {groveContext.currentGoalName 
                 ? `TENDING: ${groveContext.currentGoalName} (${groveContext.currentGoalProgress || 0}%)`
                 : 'LISTENING TO THE SOIL'}
@@ -148,7 +148,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
               localStorage.setItem('sapling_ani_chat_v3', JSON.stringify(initial));
             }
           }}
-          className="text-green-600 hover:text-green-400 pixel-font text-[7px] sm:text-[7.5px] uppercase tracking-wider border border-green-950 px-2 py-1 bg-[#050c05] transition-colors"
+          className="text-green-600 hover:text-green-400 pixel-font text-[6.5px] sm:text-[7.5px] uppercase tracking-wider border border-green-950 px-1.5 xs:px-2 py-1 bg-[#050c05] transition-colors shrink-0"
           title="Reset conversation"
         >
           [ CLEAR ]
