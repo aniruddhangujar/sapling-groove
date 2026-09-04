@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { SaplingGoal, UserProfile, TimelineType, TreeType, AppTab, PomoVisualMode, FocusMode, FocusSessionLog, AppViewMode } from './types';
 import PixelButton from './components/PixelButton';
 import SaplingCanvas from './components/SaplingCanvas';
@@ -55,6 +55,26 @@ const SaplingAppContent: React.FC = () => {
   const [utilityMode, setUtilityMode] = useState<FocusMode>('chronos');
   const [harvestNotice, setHarvestNotice] = useState<string | null>(null);
   const [selectedGroveGoalId, setSelectedGroveGoalId] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const [navHeight, setNavHeight] = useState<number>(0);
+
+  // Dynamically measure fixed bottom navigation to guarantee pixel-exact clearance across all mobile and desktop viewports
+  useEffect(() => {
+    if (!navRef.current) return;
+    const updateNavHeight = () => {
+      if (navRef.current) {
+        setNavHeight(navRef.current.offsetHeight);
+      }
+    };
+    updateNavHeight();
+    const observer = new ResizeObserver(updateNavHeight);
+    observer.observe(navRef.current);
+    window.addEventListener('resize', updateNavHeight);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateNavHeight);
+    };
+  }, [viewMode]);
 
   const dummySeedGoal: SaplingGoal = useMemo(() => ({
     id: 'empty-seed-preview',
@@ -660,7 +680,11 @@ const SaplingAppContent: React.FC = () => {
         </div>
       </header>
 
-      <main id="main-content" className="flex-1 overflow-y-auto pb-16 sm:pb-20">
+      <main 
+        id="main-content" 
+        className={`flex-1 min-h-0 ${activeTab === 'ani' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}
+        style={{ paddingBottom: navHeight ? `${navHeight}px` : 'var(--bottom-nav-height)' }}
+      >
         {activeTab === 'grove' && renderGrove()}
         {activeTab === 'tasks' && renderTasks()}
         {activeTab === 'logs' && renderLogs()}
@@ -680,6 +704,7 @@ const SaplingAppContent: React.FC = () => {
 
       {/* BOTTOM NAVIGATION WITH CLEAR, CONTRAST-ENHANCED VISIBILITY */}
       <nav 
+        ref={navRef}
         aria-label="Main navigation" 
         className="fixed bottom-0 left-0 right-0 max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto bg-[#040a04]/98 backdrop-blur-md border-t-2 border-green-900/40 px-1.5 py-1.5 xs:p-2 sm:p-3 md:p-4 grid grid-cols-4 gap-1 sm:gap-2 z-[60] pb-safe"
       >

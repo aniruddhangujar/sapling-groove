@@ -14,6 +14,13 @@
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
+  --bottom-nav-height: calc(4.75rem + var(--sab));
+}
+
+@media (min-width: 640px) {
+  :root {
+    --bottom-nav-height: calc(6.5rem + var(--sab));
+  }
 }
 
 /* ===== BASE STYLES ===== */

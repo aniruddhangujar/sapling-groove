@@ -105,7 +105,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#040a04] relative overflow-hidden">
+    <div className="flex-1 min-h-0 flex flex-col h-full bg-[#040a04] relative overflow-hidden">
       {/* HUD Background Grid */}
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none hud-grid" />
 
@@ -156,7 +156,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-5 custom-scrollbar transition-opacity duration-500 z-10">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-5 custom-scrollbar transition-opacity duration-500 z-10">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
             <div className={`max-w-[92%] sm:max-w-[82%] relative ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
@@ -207,7 +207,7 @@ const AniChat: React.FC<Props> = ({ profile, activeSessionGoal }) => {
       </div>
 
       {/* Input Bar Overlay — Fully Mobile Optimized */}
-      <div className="p-2 sm:p-3 border-t-2 border-green-950/60 bg-[#040a04]/98 backdrop-blur-md z-10 shrink-0 pb-safe">
+      <div className="p-2 sm:p-3 border-t-2 border-green-950/60 bg-[#040a04]/98 backdrop-blur-md z-10 shrink-0">
         {error && (
           <div className="mb-2.5 p-2 bg-red-950/40 border border-red-900/60 flex items-center justify-between animate-in fade-in zoom-in-95 duration-200 rounded-sm">
             <span className="pixel-font text-[8px] sm:text-[9px] text-red-400 uppercase tracking-widest leading-relaxed">
