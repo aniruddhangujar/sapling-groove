@@ -511,8 +511,8 @@ const SaplingAppContent: React.FC = () => {
                         <h2 className="pixel-font text-2xl xs:text-3xl sm:text-5xl text-white select-none tracking-tighter leading-none shadow-[0_0_10px_rgba(0,0,0,0.5)]">
                           25:00
                         </h2>
-                        <span className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase mt-2 sm:mt-5 tracking-[0.2em] font-bold">
-                          Countdown Ready
+                        <span className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase mt-2 sm:mt-4 tracking-[0.2em] font-bold">
+                          READY
                         </span>
                       </div>
                    </div>
