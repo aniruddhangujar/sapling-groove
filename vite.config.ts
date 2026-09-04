@@ -76,7 +76,7 @@ When asked about goals or stats, reference their actual provided Grove context.`
             if (key.startsWith('sk-or-')) {
               console.log("[ANI API DEV] Detected OpenRouter API key. Routing via OpenRouter...");
               
-              const orMessages = [
+              const orMessages: any[] = [
                 { role: 'system', content: systemInstruction }
               ];
 
