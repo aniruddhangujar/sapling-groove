@@ -240,6 +240,13 @@ class AmbientSoundEngine {
       chimeOsc.connect(chimeGain);
       chimeGain.connect(this.masterGain);
 
+      chimeOsc.onended = () => {
+        try {
+          chimeOsc.disconnect();
+          chimeGain.disconnect();
+        } catch (e) {}
+      };
+
       chimeOsc.start(t);
       chimeOsc.stop(t + 2.6);
     };

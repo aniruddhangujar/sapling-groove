@@ -35,6 +35,31 @@ html, body {
   color: #d1d5db;
   font-family: 'VT323', monospace;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== NUMERIC & TYPOGRAPHIC POLISH (from ECC make-interfaces-feel-better) ===== */
+.tabular-nums,
+.pixel-font,
+.font-display,
+.font-terminal {
+  font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3, h4, .text-balance {
+  text-wrap: balance;
+}
+
+p, .text-pretty {
+  text-wrap: pretty;
+}
+
+.press-tactile {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.press-tactile:active {
+  transform: scale(0.97);
 }
 
 /* ===== CRT OVERLAY ===== */
