@@ -1,16 +1,46 @@
-
-import React, { useRef, useEffect, useMemo, useCallback } from 'react';
-import { SaplingGoal, TreeType } from '../types';
+import React, { useRef, useEffect, useMemo, useCallback, useState } from 'react';
+import { SaplingGoal } from '../types';
 import { renderPixelTree } from '../utils/pixelTreeRenderer';
+import VoxelTreeCanvas from './VoxelTreeCanvas';
 
 interface Props {
   goal: SaplingGoal;
   size?: number;
   animate?: boolean;
   overrideAccruedMinutes?: number; 
+  interactiveOrbit?: boolean;
 }
 
-const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, overrideAccruedMinutes }) => {
+let isWebGLAvailableCache: boolean | null = null;
+function checkWebGLSupport(): boolean {
+  if (isWebGLAvailableCache !== null) return isWebGLAvailableCache;
+  if (typeof window === 'undefined') return false;
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    isWebGLAvailableCache = !!(window.WebGLRenderingContext && gl);
+    return isWebGLAvailableCache;
+  } catch {
+    isWebGLAvailableCache = false;
+    return false;
+  }
+}
+
+/**
+ * SaplingCanvas: Unified Botanical Tree Canvas
+ * Renders high-performance 3D Voxel Botanical Trees via Three.js (single draw call InstancedMesh).
+ * Gracefully falls back to 2D canvas pixel-tree renderer if WebGL is unavailable.
+ */
+const SaplingCanvas: React.FC<Props> = ({ 
+  goal, 
+  size = 200, 
+  animate = true, 
+  overrideAccruedMinutes,
+  interactiveOrbit = true
+}) => {
+  const [use3DVoxel, setUse3DVoxel] = useState(() => checkWebGLSupport());
+
+  // 2D Fallback references
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef(0);
@@ -23,13 +53,11 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
     return s;
   }, [goal.id]);
 
-  // Memoize values that the draw function needs
   const drawDataRef = useRef({ goal, size, overrideAccruedMinutes, seed });
   useEffect(() => {
     drawDataRef.current = { goal, size, overrideAccruedMinutes, seed };
   }, [goal, size, overrideAccruedMinutes, seed]);
 
-  // Check reduced motion preference
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     reducedMotionRef.current = mq.matches;
@@ -40,7 +68,7 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  const draw = useCallback((frame: number) => {
+  const draw2DFallback = useCallback((frame: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -57,8 +85,8 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
   const isVisibleRef = useRef(true);
   const lastFrameTimeRef = useRef(0);
 
-  // IntersectionObserver to pause animation when scrolled out of viewport
   useEffect(() => {
+    if (use3DVoxel) return;
     const container = containerRef.current;
     if (!container || typeof IntersectionObserver === 'undefined') return;
 
@@ -73,31 +101,29 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
 
     observer.observe(container);
     return () => observer.disconnect();
-  }, []);
+  }, [use3DVoxel]);
 
-  // Visibilitychange listener to pause animation when tab is in background
   useEffect(() => {
+    if (use3DVoxel) return;
     const handleVisibility = () => {
       isVisibleRef.current = !document.hidden;
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
+  }, [use3DVoxel]);
 
-  // Animation loop — entirely within refs, NO React state updates per frame, throttled to 30fps
   useEffect(() => {
+    if (use3DVoxel) return;
     if (!animate || reducedMotionRef.current) {
-      // Draw once statically
-      draw(0);
+      draw2DFallback(0);
       return;
     }
 
     const tick = (now: number) => {
-      // Pace to ~30 FPS (33ms) for calm pixel sway and minimal CPU overhead
       if (isVisibleRef.current && now - lastFrameTimeRef.current >= 33) {
         lastFrameTimeRef.current = now;
         frameRef.current = (frameRef.current + 1) % 10000;
-        draw(frameRef.current);
+        draw2DFallback(frameRef.current);
       }
       animIdRef.current = requestAnimationFrame(tick);
     };
@@ -109,13 +135,28 @@ const SaplingCanvas: React.FC<Props> = ({ goal, size = 200, animate = true, over
         animIdRef.current = null;
       }
     };
-  }, [animate, draw]);
+  }, [animate, draw2DFallback, use3DVoxel]);
 
-  // Redraw when meaningful props change (without animation loop restart)
   useEffect(() => {
-    draw(frameRef.current);
-  }, [goal.accruedMinutes, goal.health, goal.type, overrideAccruedMinutes, size, draw]);
+    if (!use3DVoxel) {
+      draw2DFallback(frameRef.current);
+    }
+  }, [goal.accruedMinutes, goal.health, goal.type, overrideAccruedMinutes, size, draw2DFallback, use3DVoxel]);
 
+  // If 3D Voxel rendering is supported, render the genuine 3D Voxel Botanical Tree
+  if (use3DVoxel) {
+    return (
+      <VoxelTreeCanvas 
+        goal={goal} 
+        size={size} 
+        animate={animate} 
+        overrideAccruedMinutes={overrideAccruedMinutes}
+        interactiveOrbit={interactiveOrbit}
+      />
+    );
+  }
+
+  // 2D Pixel Canvas Fallback
   return (
     <div 
       ref={containerRef}

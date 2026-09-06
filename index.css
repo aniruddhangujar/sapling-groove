@@ -83,6 +83,11 @@ p, .text-pretty {
 }
 
 /* ===== ART-DIRECTED TYPOGRAPHY ===== */
+.font-orbitron {
+  font-family: 'Orbitron', 'Space Mono', sans-serif;
+  letter-spacing: 0.04em;
+}
+
 .font-display {
   font-family: 'Space Mono', monospace;
   letter-spacing: -0.02em;
@@ -136,6 +141,26 @@ p, .text-pretty {
   100% { box-shadow: 0 0 10px rgba(34, 197, 94, 0.1), inset 0 0 5px rgba(34, 197, 94, 0.05); }
 }
 .ani-glow { animation: pulse-glow 3s infinite ease-in-out; }
+
+/* ===== CYBER-BOTANICAL CHAMBER UTILITIES ===== */
+.chamber-glow {
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.14) 0%, rgba(34, 197, 94, 0.04) 50%, transparent 75%);
+}
+
+.amber-glow {
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.03) 50%, transparent 75%);
+}
+
+.glass-panel {
+  background-color: rgba(6, 18, 6, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(20, 83, 45, 0.45);
+}
+
+.hologram-border {
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  box-shadow: inset 0 0 12px rgba(74, 222, 128, 0.05), 0 0 15px rgba(74, 222, 128, 0.08);
+}
 
 /* ===== CUSTOM SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 4px; }
