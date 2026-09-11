@@ -210,7 +210,8 @@ export default defineConfig(({ mode }) => {
           output: {
             manualChunks: {
               'vendor-react': ['react', 'react-dom'],
-              'vendor-three': ['three']
+              'vendor-three': ['three'],
+              'vendor-firebase': ['firebase/app', 'firebase/auth']
             }
           }
         }

@@ -1,31 +1,47 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, AuthSession } from '../types';
+import { User, AuthSession, AuthProviderType } from '../types';
 import { authService } from '../services/authService';
 
 interface AuthContextValue extends AuthSession {
   isLoading: boolean;
+  isConfigured: boolean;
   isGoogleConfigured: boolean;
   showAuthModal: boolean;
   setShowAuthModal: (show: boolean) => void;
   signInWithGoogle: () => Promise<void>;
-  continueAsGuest: () => void;
+  signInWithGithub: () => Promise<void>;
+  signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signUpWithEmail: (email: string, pass: string, displayName: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
+  continueAsGuest: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => authService.getCurrentUser());
+  const [providerType, setProviderType] = useState<AuthProviderType>(() => {
+    const cached = authService.getCurrentUser();
+    if (!cached) return null;
+    return cached.isAnonymous ? 'guest' : 'google';
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
-    // Check for existing user session
-    const existing = authService.getCurrentUser();
-    if (existing) {
-      setUser(existing);
-    }
-    setIsLoading(false);
+    // Subscribe to live Firebase auth state changes
+    const unsubscribe = authService.subscribeToAuthState((activeUser) => {
+      setUser(activeUser);
+      if (activeUser) {
+        setProviderType(activeUser.isAnonymous ? 'guest' : 'google');
+      } else {
+        setProviderType(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
@@ -33,34 +49,87 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const loggedUser = await authService.signInWithGoogle();
       setUser(loggedUser);
+      setProviderType('google');
       setShowAuthModal(false);
-    } catch (err: any) {
+    } finally {
       setIsLoading(false);
-      throw err;
     }
-    setIsLoading(false);
   }, []);
 
-  const continueAsGuest = useCallback(() => {
-    const guestUser = authService.createGuestSession();
-    setUser(guestUser);
-    setShowAuthModal(false);
+  const signInWithGithub = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const loggedUser = await authService.signInWithGithub();
+      setUser(loggedUser);
+      setProviderType('github');
+      setShowAuthModal(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const signInWithEmail = useCallback(async (email: string, pass: string) => {
+    setIsLoading(true);
+    try {
+      const loggedUser = await authService.signInWithEmail(email, pass);
+      setUser(loggedUser);
+      setProviderType('password');
+      setShowAuthModal(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const signUpWithEmail = useCallback(async (email: string, pass: string, displayName: string) => {
+    setIsLoading(true);
+    try {
+      const loggedUser = await authService.signUpWithEmail(email, pass, displayName);
+      setUser(loggedUser);
+      setProviderType('password');
+      setShowAuthModal(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const sendPasswordReset = useCallback(async (email: string) => {
+    await authService.sendPasswordReset(email);
+  }, []);
+
+  const continueAsGuest = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const guestUser = await authService.createGuestSession();
+      setUser(guestUser);
+      setProviderType('guest');
+      setShowAuthModal(false);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const signOut = useCallback(async () => {
     await authService.signOut();
     setUser(null);
+    setProviderType(null);
   }, []);
+
+  const isConfigured = authService.isConfigured();
 
   const value: AuthContextValue = {
     user,
-    provider: user ? (user.isAnonymous ? 'guest' : 'google') : null,
+    provider: user ? (user.isAnonymous ? 'guest' : providerType || 'google') : null,
     isAuthenticated: Boolean(user && !user.isAnonymous),
     isLoading,
-    isGoogleConfigured: authService.isGoogleConfigured(),
+    isConfigured,
+    isGoogleConfigured: isConfigured,
     showAuthModal,
     setShowAuthModal,
     signInWithGoogle,
+    signInWithGithub,
+    signInWithEmail,
+    signUpWithEmail,
+    sendPasswordReset,
     continueAsGuest,
     signOut
   };

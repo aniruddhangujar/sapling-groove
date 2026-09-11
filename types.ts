@@ -63,9 +63,11 @@ export interface User {
   isAnonymous: boolean;
 }
 
+export type AuthProviderType = 'google' | 'github' | 'password' | 'guest' | null;
+
 export interface AuthSession {
   user: User | null;
-  provider: 'google' | 'guest' | null;
+  provider: AuthProviderType;
   isAuthenticated: boolean;
 }
 
