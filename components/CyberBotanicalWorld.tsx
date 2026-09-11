@@ -11,6 +11,7 @@ interface Props {
   treeType?: TreeType;
   progress?: number;
   interactiveOrbit?: boolean;
+  onReady?: () => void;
 }
 
 /**
@@ -60,7 +61,8 @@ const CyberBotanicalWorld: React.FC<Props> = ({
   goal,
   treeType,
   progress,
-  interactiveOrbit = true
+  interactiveOrbit = true,
+  onReady
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const isVisibleRef = useRef(true);
@@ -466,6 +468,7 @@ const CyberBotanicalWorld: React.FC<Props> = ({
     // Animation Loop
     let animId: number;
     let clock = new THREE.Clock();
+    let hasReportedReady = false;
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
@@ -517,6 +520,11 @@ const CyberBotanicalWorld: React.FC<Props> = ({
       posAttr.needsUpdate = true;
 
       renderer.render(scene, camera);
+
+      if (!hasReportedReady) {
+        hasReportedReady = true;
+        onReady?.();
+      }
     };
 
     animId = requestAnimationFrame(animate);

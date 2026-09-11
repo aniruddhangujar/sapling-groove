@@ -5,6 +5,7 @@ import VoxelTreeCanvas from './VoxelTreeCanvas';
 import CyberBotanicalWorld from './CyberBotanicalWorld';
 import { FeatureInstrumentDrawer, InstrumentId } from './FeatureInstrumentDrawer';
 import MiniDioramaCanvas from './MiniDioramaCanvas';
+import SaplingLoader from './SaplingLoader';
 import { useAuth } from '../context/AuthContext';
 
 interface Props {
@@ -318,6 +319,32 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
   const [heroTreeType, setHeroTreeType] = useState<TreeType>(TreeType.OAK);
   const [activeDrawer, setActiveDrawer] = useState<InstrumentId | null>(null);
 
+  // Botanical Loader Readiness State (Signals when real assets and hero scene are primed)
+  const [isHeroCanvasReady, setIsHeroCanvasReady] = useState(false);
+  const [isFontsReady, setIsFontsReady] = useState(false);
+  const [isBackdropReady, setIsBackdropReady] = useState(false);
+
+  useEffect(() => {
+    // Check fonts readiness
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(() => setIsFontsReady(true)).catch(() => setIsFontsReady(true));
+    } else {
+      setIsFontsReady(true);
+    }
+
+    // Check background environmental matte readiness
+    const img = new Image();
+    img.src = '/assets/environment-backdrop.jpg?v=3';
+    if (img.complete) {
+      setIsBackdropReady(true);
+    } else {
+      img.onload = () => setIsBackdropReady(true);
+      img.onerror = () => setIsBackdropReady(true);
+    }
+  }, []);
+
+  const isPageReady = isHeroCanvasReady && isFontsReady && isBackdropReady;
+
   // Mutually Exclusive Specimen Context: Germination and Herbarium NEVER mount WebGLRenderers concurrently
   const germinationSectionRef = useRef<HTMLElement>(null);
   const herbariumSectionRef = useRef<HTMLElement>(null);
@@ -488,6 +515,13 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
 
   return (
     <div className="min-h-screen bg-[#040a04] text-[#dde5da] relative overflow-x-hidden selection:bg-[#4ade80] selection:text-black">
+      {/* Botanical Lightweight Germination Loader */}
+      <SaplingLoader
+        isReady={isPageReady}
+        minDisplayMs={750}
+        maxTimeoutMs={2200}
+      />
+
       {/* TOP NAVIGATION — Cyber-Botanical Architectural Header (Matching reference image) */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#040a04]/90 backdrop-blur-md border-b border-green-950/70 px-4 sm:px-8 py-3 flex justify-between items-center transition-all pt-safe">
         {/* Brand Mark */}
@@ -624,6 +658,7 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
                 treeType={heroTreeType}
                 progress={1.0}
                 interactiveOrbit={true}
+                onReady={() => setIsHeroCanvasReady(true)}
                 className="z-0" 
               />
 

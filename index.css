@@ -212,6 +212,28 @@ p, .text-pretty {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+/* ===== BOTANICAL LOADER SPORES ===== */
+@keyframes sporeDrift {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.65;
+  }
+  70% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: translateY(-50px) scale(1.1);
+    opacity: 0;
+  }
+}
+
+.animate-spore-drift {
+  animation: sporeDrift linear infinite;
+}
+
 /* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {
   .animate-in {
@@ -221,6 +243,9 @@ p, .text-pretty {
   .animate-pulse {
     animation: none !important;
   }
+  .animate-spore-drift {
+    animation: none !important;
+  }
   .ani-glow {
     animation: none !important;
   }
@@ -228,3 +253,4 @@ p, .text-pretty {
     transition-duration: 0.01ms !important;
   }
 }
+
