@@ -48,7 +48,7 @@ const parseViewMode = (rawHash: string): AppViewMode => {
 };
 
 const SaplingAppContent: React.FC = () => {
-  const { showAuthModal, setShowAuthModal, user, isAuthenticated } = useAuth();
+  const { showAuthModal, setShowAuthModal, user, isAuthenticated, signOut } = useAuth();
 
   // Determine initial view from URL hash
   const [viewMode, setViewMode] = useState<AppViewMode>(() => {
@@ -57,6 +57,9 @@ const SaplingAppContent: React.FC = () => {
     }
     return 'landing';
   });
+
+  const [lowBatteryDetected, setLowBatteryDetected] = useState(false);
+  const [batteryBannerDismissed, setBatteryBannerDismissed] = useState(false);
 
   const [profile, setProfile] = useState<UserProfile>(() => storageService.getProfile());
   const [activeTab, setActiveTab] = useState<AppTab>(() => {
@@ -139,10 +142,11 @@ const SaplingAppContent: React.FC = () => {
 
   // Sync profile changes to storage (local-first, with background async cloud sync if authenticated)
   useEffect(() => {
-    storageService.saveProfile(profile);
-  }, [profile]);
+    storageService.saveProfile(profile, user && !user.isAnonymous ? user.id : undefined);
+  }, [profile, user?.id, user?.isAnonymous]);
 
-  // When user logs in to a verified Google/Email account, pull and merge Firestore profile
+  // When user logs in to a verified Google/Email account, pull and merge Firestore profile.
+  // When user signs out, purge in-memory state and load fresh guest profile (Constraint 2: Shared Lab Computers)
   useEffect(() => {
     if (user && !user.isAnonymous) {
       storageService.loadProfileFromFirestore(user.id).then(cloudProfile => {
@@ -150,8 +154,102 @@ const SaplingAppContent: React.FC = () => {
       }).catch(err => {
         console.warn("[App] Cloud sync fallback to local storage:", err?.message);
       });
+    } else {
+      // Complete in-memory state purge on sign-out
+      setProfile(storageService.getProfile('guest'));
+      setRecoveredSession(null);
+      setActiveSessionGoal(null);
+      setSelectedGroveGoalId(null);
+      try {
+        localStorage.removeItem('sapling_active_session_recovery');
+      } catch {}
     }
   }, [user?.id, user?.isAnonymous]);
+
+  // Optional Battery Status API detection (Constraint 3 & 4)
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('getBattery' in navigator)) return;
+    let battery: any = null;
+    const updateBattery = (b: any) => {
+      if (b.level <= 0.20 && !b.charging) {
+        setLowBatteryDetected(true);
+      } else {
+        setLowBatteryDetected(false);
+      }
+    };
+
+    (navigator as any).getBattery().then((b: any) => {
+      battery = b;
+      updateBattery(battery);
+      battery.addEventListener('levelchange', () => updateBattery(battery));
+      battery.addEventListener('chargingchange', () => updateBattery(battery));
+    }).catch(() => {
+      // Gracefully ignore if restricted or unsupported
+    });
+
+    return () => {
+      if (battery) {
+        battery.removeEventListener?.('levelchange', () => updateBattery(battery));
+        battery.removeEventListener?.('chargingchange', () => updateBattery(battery));
+      }
+    };
+  }, []);
+
+  // Reversible Eco Canopy Toggle (Constraint 3, 9, 10)
+  const toggleEcoCanopy = useCallback(() => {
+    setProfile(prev => ({
+      ...prev,
+      preferences: {
+        ...prev.preferences,
+        ecoCanopyMode: !prev.preferences?.ecoCanopyMode
+      }
+    }));
+  }, []);
+
+  // First-time student detection (Zero focus time & empty/default seeds)
+  const isFirstTimeStudent = useMemo(() => {
+    return profile.totalFocusTime === 0 && (profile.grove.length === 0 || profile.grove.every(g => g.accruedMinutes === 0));
+  }, [profile.totalFocusTime, profile.grove]);
+
+  // 1-Click Starter Intention Launch (<10s time-to-first-focus)
+  const handleLaunchStarterPreset = useCallback((presetType: 'algorithm' | 'essay' | 'review') => {
+    let presetName = 'Algorithm Sprint';
+    let tree = TreeType.PINE;
+    let duration = 25;
+
+    if (presetType === 'essay') {
+      presetName = 'Deep Essay';
+      tree = TreeType.WILLOW;
+      duration = 45;
+    } else if (presetType === 'review') {
+      presetName = 'Rapid Review';
+      tree = TreeType.BAMBOO;
+      duration = 15;
+    }
+
+    let targetGoal = profile.grove.find(g => g.name === presetName && !g.isComplete);
+    if (!targetGoal) {
+      targetGoal = storageService.addGoal({
+        name: presetName,
+        type: tree,
+        timeline: TimelineType.DAY,
+        startDate: Date.now(),
+        durationInDays: 1,
+        dailyTargetMinutes: duration,
+        totalTargetMinutes: duration,
+        accruedMinutes: 0,
+        isComplete: false,
+        health: 100,
+        perfectionScore: 1.0
+      });
+      setProfile(prev => ({
+        ...prev,
+        grove: [...prev.grove, targetGoal!]
+      }));
+    }
+
+    startGoalRitual(targetGoal, 'chronos', duration);
+  }, [profile.grove]);
 
   // Check for in-progress session snapshot on boot (does NOT auto-complete session)
   useEffect(() => {
@@ -364,6 +462,92 @@ const SaplingAppContent: React.FC = () => {
             </div>
           )}
 
+          {/* Eco Canopy Low-Battery Recommendation Banner (Constraint 3 & 4) */}
+          {lowBatteryDetected && !batteryBannerDismissed && !profile.preferences?.ecoCanopyMode && (
+            <div className="bg-[#140e04] border-2 border-amber-500/80 p-2.5 sm:p-3 flex items-center justify-between text-amber-300 pixel-font text-[7.5px] sm:text-[8px] uppercase tracking-wider shrink-0 animate-in fade-in shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse shrink-0" />
+                <span className="truncate">⚡ LOW BATTERY DETECTED // Enable Eco Canopy to preserve power & reduce GPU load</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setProfile(prev => ({
+                      ...prev,
+                      preferences: {
+                        ...prev.preferences,
+                        ecoCanopyMode: true
+                      }
+                    }));
+                    setBatteryBannerDismissed(true);
+                  }}
+                  className="px-2.5 py-1 border border-amber-500 bg-amber-950/70 text-amber-200 hover:text-white font-bold"
+                >
+                  ENABLE
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setBatteryBannerDismissed(true)}
+                  className="text-amber-500 hover:text-amber-200 px-1 text-base leading-none font-bold"
+                  aria-label="Dismiss battery alert"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* First-Time Student 10-Second Onboarding Banner (Zero Friction Quick Start) */}
+          {isFirstTimeStudent && (
+            <div className="bg-[#061406] border-2 border-green-500/70 p-3 sm:p-4 shadow-[0_0_25px_rgba(34,197,94,0.15)] animate-in fade-in shrink-0 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  <span className="pixel-font text-[8px] sm:text-[9px] text-green-300 uppercase tracking-wider font-bold">
+                    SPROUT YOUR FIRST RITUAL // 10-SECOND QUICK START
+                  </span>
+                </div>
+                <span className="text-[7px] text-green-500 pixel-font uppercase">ZERO FRICTION</span>
+              </div>
+              <p className="font-editorial text-[11px] sm:text-xs text-green-300/80 leading-snug">
+                Every minute of focused study cultivates and grows your cyber-botanical tree. Select a starter ritual preset to begin:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleLaunchStarterPreset('algorithm')}
+                  className="px-2.5 py-2 border border-green-700/80 bg-[#081a08] hover:bg-[#0f2e0f] hover:border-green-400 text-left transition-all group"
+                >
+                  <div className="pixel-font text-[7.5px] text-green-300 group-hover:text-white font-bold uppercase truncate">
+                    ⚡ Algorithm Sprint
+                  </div>
+                  <div className="text-[9px] text-green-500/80 font-mono mt-0.5">25m • Pine Specimen</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLaunchStarterPreset('essay')}
+                  className="px-2.5 py-2 border border-green-700/80 bg-[#081a08] hover:bg-[#0f2e0f] hover:border-green-400 text-left transition-all group"
+                >
+                  <div className="pixel-font text-[7.5px] text-green-300 group-hover:text-white font-bold uppercase truncate">
+                    📜 Deep Essay
+                  </div>
+                  <div className="text-[9px] text-green-500/80 font-mono mt-0.5">45m • Willow Specimen</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLaunchStarterPreset('review')}
+                  className="px-2.5 py-2 border border-green-700/80 bg-[#081a08] hover:bg-[#0f2e0f] hover:border-green-400 text-left transition-all group"
+                >
+                  <div className="pixel-font text-[7.5px] text-green-300 group-hover:text-white font-bold uppercase truncate">
+                    🌿 Rapid Review
+                  </div>
+                  <div className="text-[9px] text-green-500/80 font-mono mt-0.5">15m • Bamboo Specimen</div>
+                </button>
+              </div>
+            </div>
+          )}
+
           {recoveredSession && (
             <div className="bg-[#061406] border-2 border-amber-600/70 p-2.5 sm:p-3 flex items-center justify-between shadow-[0_0_20px_rgba(245,158,11,0.2)] animate-in fade-in shrink-0">
               <div className="flex items-center gap-2 min-w-0">
@@ -473,7 +657,12 @@ const SaplingAppContent: React.FC = () => {
             <div className="relative flex flex-col items-center justify-center py-8 sm:py-14 text-center max-w-md mx-auto">
               <div className="relative w-48 sm:w-56 aspect-square flex items-center justify-center mb-2">
                 <div className="absolute inset-0 rounded-full bg-green-500/5 blur-2xl pointer-events-none" />
-                <SaplingCanvas goal={dummySeedGoal} size={200} animate={true} />
+                <SaplingCanvas 
+                  goal={dummySeedGoal} 
+                  size={200} 
+                  animate={true} 
+                  forceEcoMode={Boolean(profile.preferences?.ecoCanopyMode)}
+                />
               </div>
               <h2 className="pixel-font text-sm sm:text-base text-white uppercase tracking-tight mb-1 font-bold">
                 YOUR SOIL IS WAITING
@@ -513,7 +702,12 @@ const SaplingAppContent: React.FC = () => {
 
               {/* Hero Tree Canvas Showcase */}
               <div className="relative z-10 w-36 xs:w-44 sm:w-48 aspect-square flex items-center justify-center my-0.5">
-                <SaplingCanvas goal={activeGoal} size={190} animate={true} />
+                <SaplingCanvas 
+                  goal={activeGoal} 
+                  size={190} 
+                  animate={true} 
+                  forceEcoMode={Boolean(profile.preferences?.ecoCanopyMode)}
+                />
               </div>
 
               {/* Grounding Telemetry & Biological Maturation */}
@@ -584,7 +778,12 @@ const SaplingAppContent: React.FC = () => {
               {completedGoals.map(cg => (
                 <div key={cg.id} className="flex flex-col items-center text-center p-1.5 border border-green-950/60 bg-[#061206]/50 hover:border-green-800 transition-all">
                   <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
-                    <SaplingCanvas goal={cg} size={70} animate={false} />
+                    <SaplingCanvas 
+                      goal={cg} 
+                      size={70} 
+                      animate={false} 
+                      forceEcoMode={Boolean(profile.preferences?.ecoCanopyMode)}
+                    />
                   </div>
                   <span className="pixel-font text-[6px] sm:text-[6.5px] text-green-300 uppercase truncate w-full mt-1 font-bold">
                     {cg.name}
@@ -689,7 +888,11 @@ const SaplingAppContent: React.FC = () => {
                     <span className="pixel-font text-xs xs:text-sm sm:text-base text-white tracking-tight">00:00 → ∞</span>
                   </div>
                   <div className="relative flex items-center justify-center flex-1 my-auto">
-                    <SaplingCanvas goal={dummyGoal} size={160} />
+                    <SaplingCanvas 
+                      goal={dummyGoal} 
+                      size={160} 
+                      forceEcoMode={Boolean(profile.preferences?.ecoCanopyMode)}
+                    />
                   </div>
                   <div className="z-20 text-center mb-1">
                     <span className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase tracking-[0.2em] font-bold">
@@ -801,7 +1004,12 @@ const SaplingAppContent: React.FC = () => {
               {completedGoals.map(goal => (
                 <div key={goal.id} className="bg-[#0a160a] border border-green-950/70 p-4 text-center relative group shadow-2xl">
                   <div className="w-24 h-24 mx-auto">
-                    <SaplingCanvas goal={goal} size={100} animate={false} />
+                    <SaplingCanvas 
+                      goal={goal} 
+                      size={100} 
+                      animate={false} 
+                      forceEcoMode={Boolean(profile.preferences?.ecoCanopyMode)}
+                    />
                   </div>
                   <h4 className="pixel-font text-[9px] mt-3 text-green-300 uppercase truncate font-bold">{goal.name}</h4>
                   <div className="mt-1 text-[7px] text-green-400 pixel-font uppercase tracking-widest font-bold">Matured</div>
@@ -833,7 +1041,45 @@ const SaplingAppContent: React.FC = () => {
           </button>
         </div>
 
-        <div className="flex items-center shrink-0 ml-1.5 xs:ml-3">
+        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0 ml-1 xs:ml-2">
+          {/* Reversible Eco Canopy Mode Toggle (Constraint 3, 9, 10) */}
+          <button
+            type="button"
+            onClick={toggleEcoCanopy}
+            className={`flex items-center gap-1 px-1.5 xs:px-2 py-1 border pixel-font text-[6.5px] xs:text-[7px] sm:text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[32px] ${
+              profile.preferences?.ecoCanopyMode
+                ? 'border-emerald-400 bg-emerald-950/70 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.3)] font-bold'
+                : 'border-green-800/70 bg-[#061406] text-green-400 hover:border-green-500 hover:text-green-200'
+            }`}
+            title={profile.preferences?.ecoCanopyMode ? "Eco Canopy Active (2D low-power mode). Click to switch to 3D Voxel." : "3D Voxel Active. Click to switch to 2D Eco Canopy for Chromebooks/battery saving."}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${profile.preferences?.ecoCanopyMode ? 'bg-emerald-400' : 'bg-green-500'}`} />
+            <span>{profile.preferences?.ecoCanopyMode ? 'ECO (2D)' : '3D VOXEL'}</span>
+          </button>
+
+          {/* User Sign In / Sign Out (Shared Lab Computer Privacy - Constraint 2) */}
+          {user && !user.isAnonymous ? (
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="flex items-center gap-1 px-1.5 xs:px-2 py-1 border border-zinc-700 bg-zinc-950/80 text-zinc-300 hover:text-red-300 hover:border-red-700 pixel-font text-[6.5px] xs:text-[7px] sm:text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[32px]"
+              title="Sign out & purge private session data from this computer"
+            >
+              <span className="hidden xs:inline">SIGN OUT</span>
+              <span className="xs:hidden">EXIT</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowAuthModal(true)}
+              className="flex items-center gap-1 px-1.5 xs:px-2 py-1 border border-green-800/80 bg-[#061406] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[6.5px] xs:text-[7px] sm:text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[32px]"
+              title="Sign in to save your grove to cloud"
+            >
+              <span className="hidden xs:inline">SIGN IN</span>
+              <span className="xs:hidden">LOGIN</span>
+            </button>
+          )}
+
           <div className="text-right flex flex-col items-end">
              <div className="pixel-font text-[6px] sm:text-[7px] text-green-400 uppercase tracking-widest mb-0.5 font-bold whitespace-nowrap">
                Total Focus
@@ -955,6 +1201,7 @@ const SaplingAppContent: React.FC = () => {
               setActiveSessionGoal(null);
               setSessionDurationMinutes(undefined);
             }}
+            forceEcoMode={Boolean(profile.preferences?.ecoCanopyMode)}
           />
         )}
       </Suspense>

@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import { User } from '../types';
 import { auth, googleProvider, githubProvider, isFirebaseConfigured } from './firebase';
+import { storageService } from './storageService';
 
 const AUTH_USER_KEY = 'sapling_auth_user_v1';
 
@@ -219,15 +220,19 @@ export class AuthService {
   }
 
   /**
-   * Signs out the user and clears sessions
+   * Signs out the user, clears sessions, and purges authenticated local cache
    */
   public async signOut(): Promise<void> {
+    const currentUid = auth?.currentUser?.uid || this.getCurrentUser()?.id;
     if (auth && auth.currentUser) {
       try {
         await firebaseSignOut(auth);
       } catch {}
     }
     this.saveUser(null);
+    if (currentUid && !currentUid.startsWith('guest_')) {
+      storageService.purgeAuthenticatedStorage(currentUid);
+    }
   }
 
   /**

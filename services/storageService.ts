@@ -2,8 +2,16 @@ import { UserProfile, SaplingGoal, FocusSessionLog, ChatMessage, TreeType, Timel
 import { db, auth } from './firebase';
 import { doc, setDoc, getDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
 
-const PROFILE_KEY = 'sapling_profile_v3';
+const LEGACY_PROFILE_KEY = 'sapling_profile_v3';
+const GUEST_PROFILE_KEY = 'sapling_profile_guest_v3';
 const ANI_CHAT_KEY = 'sapling_ani_chat_v3';
+
+function getProfileKey(userId?: string | null): string {
+  if (userId && userId !== 'guest' && !userId.startsWith('guest_')) {
+    return `sapling_profile_user_${userId}`;
+  }
+  return GUEST_PROFILE_KEY;
+}
 
 function sanitizeString(str: any, maxLen = 120, fallback = ''): string {
   if (typeof str !== 'string') return fallback;
@@ -42,15 +50,24 @@ function validateGoal(item: any): SaplingGoal | null {
   };
 }
 
+/**
+ * Non-aggressive sanity check on untrusted client logs (Constraint 1)
+ * Prevents negative durations and corrupted values without rejecting legitimate long study sessions.
+ */
 function validateLog(item: any): FocusSessionLog | null {
   if (!item || typeof item !== 'object') return null;
-  const duration = typeof item.durationMinutes === 'number' ? Math.max(0, Math.min(720, Math.floor(item.durationMinutes))) : 0;
+  // Non-aggressive bound: allow sessions up to 1440 mins (24h)
+  const duration = typeof item.durationMinutes === 'number' ? Math.max(0, Math.min(1440, Math.floor(item.durationMinutes))) : 0;
   if (duration <= 0) return null;
   const id = sanitizeString(item.id, 64, 'log_' + Math.random().toString(36).substring(2, 9));
   const goalName = sanitizeString(item.goalName, 120, 'Focus Session');
   const mode = item.mode === 'groove' ? 'groove' : 'chronos';
-  const startedAt = typeof item.startedAt === 'number' ? item.startedAt : Date.now() - duration * 60000;
-  const endedAt = typeof item.endedAt === 'number' ? item.endedAt : Date.now();
+  
+  // Non-aggressive sanity check on timestamps (allow 1-minute grace for minor clock drift)
+  const now = Date.now();
+  const rawStarted = typeof item.startedAt === 'number' ? item.startedAt : now - duration * 60000;
+  const startedAt = Math.min(rawStarted, now + 60000);
+  const endedAt = typeof item.endedAt === 'number' ? Math.max(startedAt, Math.min(item.endedAt, now + 60000)) : now;
 
   return {
     id,
@@ -67,11 +84,24 @@ function validateLog(item: any): FocusSessionLog | null {
 
 export class StorageService {
   /**
-   * Loads profile from local storage with robust schema validation and error recovery
+   * Loads profile from user-scoped local storage with migration fallback and schema recovery
    */
-  public getProfile(): UserProfile {
+  public getProfile(userId?: string | null): UserProfile {
     try {
-      const saved = localStorage.getItem(PROFILE_KEY);
+      const key = getProfileKey(userId);
+      let saved = localStorage.getItem(key);
+      
+      // Check legacy key for backward compatibility migration
+      if (!saved && key === GUEST_PROFILE_KEY) {
+        const legacy = localStorage.getItem(LEGACY_PROFILE_KEY);
+        if (legacy) {
+          saved = legacy;
+          try {
+            localStorage.setItem(GUEST_PROFILE_KEY, legacy);
+          } catch {}
+        }
+      }
+
       if (!saved) {
         return this.getDefaultProfile();
       }
@@ -104,7 +134,8 @@ export class StorageService {
         logs: validLogs,
         preferences: {
           soundscape: validSound,
-          soundEnabled: parsed.preferences?.soundEnabled !== false
+          soundEnabled: parsed.preferences?.soundEnabled !== false,
+          ecoCanopyMode: Boolean(parsed.preferences?.ecoCanopyMode)
         }
       };
     } catch (e) {
@@ -114,11 +145,13 @@ export class StorageService {
   }
 
   /**
-   * Saves profile to storage locally (0ms latency), and asynchronously syncs to Firestore if authenticated
+   * Saves profile to user-scoped local storage (0ms latency), and asynchronously syncs to Firestore if authenticated
    */
-  public saveProfile(profile: UserProfile): void {
+  public saveProfile(profile: UserProfile, userId?: string | null): void {
+    const targetUserId = userId || profile.userId;
+    const key = getProfileKey(targetUserId);
     try {
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+      localStorage.setItem(key, JSON.stringify(profile));
     } catch (e) {
       console.warn("[StorageService] Error saving profile to localStorage:", e);
     }
@@ -129,6 +162,18 @@ export class StorageService {
       this.syncProfileToFirestore(uid, profile).catch(err => {
         console.debug("[StorageService] Offline/async Firestore sync queued:", err?.message);
       });
+    }
+  }
+
+  /**
+   * Completely purges an authenticated user's private data and recovery snapshots from shared computer disk
+   */
+  public purgeAuthenticatedStorage(userId: string): void {
+    try {
+      localStorage.removeItem(`sapling_profile_user_${userId}`);
+      localStorage.removeItem('sapling_active_session_recovery');
+    } catch (e) {
+      console.warn("[StorageService] Error purging authenticated storage:", e);
     }
   }
 
@@ -256,7 +301,7 @@ export class StorageService {
    * Deterministically loads and merges remote Firestore profile into local storage
    */
   public async loadProfileFromFirestore(userId: string): Promise<UserProfile> {
-    const localProfile = this.getProfile();
+    const localProfile = this.getProfile(userId);
     if (!db || !userId) return localProfile;
 
     try {
@@ -281,27 +326,42 @@ export class StorageService {
         if (validated) remoteLogs.push(validated);
       });
 
-      // Deterministic Merge: Goals
+      // Deterministic Two-Device Merge: Goals (Constraint 7 & 10)
+      // Preserves maximum progress, latest focus date, and completion across devices
       const goalMap = new Map<string, SaplingGoal>();
-      // Put remote goals first
       remoteGoals.forEach(g => goalMap.set(g.id, g));
-      // Merge local goals: keep local if more accrued minutes or newer focus date
       localProfile.grove.forEach(localGoal => {
         const remote = goalMap.get(localGoal.id);
         if (!remote) {
           goalMap.set(localGoal.id, localGoal);
         } else {
-          if (localGoal.accruedMinutes > remote.accruedMinutes) {
-            goalMap.set(localGoal.id, { ...remote, accruedMinutes: localGoal.accruedMinutes, health: localGoal.health });
-          }
+          const maxAccrued = Math.max(localGoal.accruedMinutes, remote.accruedMinutes);
+          const isComplete = Boolean(localGoal.isComplete || remote.isComplete || maxAccrued >= (remote.totalTargetMinutes || 25));
+          const latestFocusDate = Math.max(localGoal.lastFocusDate || 0, remote.lastFocusDate || 0) || undefined;
+          const bestHealth = Math.max(localGoal.health, remote.health);
+          goalMap.set(localGoal.id, {
+            ...remote,
+            accruedMinutes: maxAccrued,
+            isComplete,
+            lastFocusDate: latestFocusDate,
+            health: bestHealth
+          });
         }
       });
 
-      // Deterministic Merge: Sessions (Union by ID, sorted newest first)
+      // Deterministic Two-Device Merge: Sessions (Constraint 7)
+      // Append-only deduplication by UUID and composite timestamp+goalName
       const logMap = new Map<string, FocusSessionLog>();
-      remoteLogs.forEach(l => logMap.set(l.id, l));
-      localProfile.logs.forEach(l => logMap.set(l.id, l));
-      const mergedLogs = Array.from(logMap.values()).sort((a, b) => b.startedAt - a.startedAt);
+      const addLog = (log: FocusSessionLog) => {
+        const compositeKey = `${log.startedAt}_${log.goalName}`;
+        if (!logMap.has(log.id) && !logMap.has(compositeKey)) {
+          logMap.set(log.id, log);
+          logMap.set(compositeKey, log);
+        }
+      };
+      remoteLogs.forEach(addLog);
+      localProfile.logs.forEach(addLog);
+      const mergedLogs = Array.from(new Set(logMap.values())).sort((a, b) => b.startedAt - a.startedAt);
 
       const mergedTotalFocusTime = Math.max(
         userSnap.exists() ? (userSnap.data().totalFocusTime || 0) : 0,
@@ -315,11 +375,17 @@ export class StorageService {
         totalFocusTime: mergedTotalFocusTime,
         grove: Array.from(goalMap.values()),
         logs: mergedLogs,
-        preferences: localProfile.preferences
+        preferences: {
+          ...localProfile.preferences,
+          ecoCanopyMode: Boolean(
+            localProfile.preferences?.ecoCanopyMode ?? 
+            (userSnap.exists() ? userSnap.data().preferences?.ecoCanopyMode : false)
+          )
+        }
       };
 
-      // Save merged profile locally
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(mergedProfile));
+      // Save merged profile locally in user-scoped namespace
+      this.saveProfile(mergedProfile, userId);
       return mergedProfile;
     } catch (err: any) {
       console.warn("[StorageService] Could not pull from Firestore (using local):", err?.message);

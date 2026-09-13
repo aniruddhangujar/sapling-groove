@@ -9,6 +9,7 @@ interface Props {
   animate?: boolean;
   overrideAccruedMinutes?: number; 
   interactiveOrbit?: boolean;
+  forceEcoMode?: boolean;
 }
 
 let isWebGLAvailableCache: boolean | null = null;
@@ -29,16 +30,19 @@ function checkWebGLSupport(): boolean {
 /**
  * SaplingCanvas: Unified Botanical Tree Canvas
  * Renders high-performance 3D Voxel Botanical Trees via Three.js (single draw call InstancedMesh).
- * Gracefully falls back to 2D canvas pixel-tree renderer if WebGL is unavailable.
+ * Gracefully switches to 2D canvas pixel-tree renderer if WebGL is unavailable or Eco Canopy mode is active.
+ * Retains exact species archetype, growth stage, and biological silhouette (Constraint 5, 8, 9, 10).
  */
 const SaplingCanvas: React.FC<Props> = ({ 
   goal, 
   size = 200, 
   animate = true, 
   overrideAccruedMinutes,
-  interactiveOrbit = true
+  interactiveOrbit = true,
+  forceEcoMode = false
 }) => {
-  const [use3DVoxel, setUse3DVoxel] = useState(() => checkWebGLSupport());
+  const webGLSupported = useMemo(() => checkWebGLSupport(), []);
+  const use3DVoxel = webGLSupported && !forceEcoMode;
 
   // 2D Fallback references
   const canvasRef = useRef<HTMLCanvasElement>(null);

@@ -13,6 +13,7 @@ interface Props {
   durationMinutes?: number;
   onFinish: (minutes: number, isComplete: boolean, log: FocusSessionLog) => void;
   onCancel: () => void;
+  forceEcoMode?: boolean;
 }
 
 type SessionState = 'active' | 'break_choice' | 'on_break' | 'success';
@@ -114,7 +115,8 @@ const FocusSession: React.FC<Props> = ({
   visualMode = 'clock',
   durationMinutes,
   onFinish,
-  onCancel
+  onCancel,
+  forceEcoMode = false
 }) => {
   const remainingToMaturityMinutes = goal 
     ? Math.max(1, goal.totalTargetMinutes - goal.accruedMinutes) 
@@ -405,6 +407,48 @@ const FocusSession: React.FC<Props> = ({
     return `${m}:${rs.toString().padStart(2, '0')}`;
   };
 
+  // Keyboard Ritual Shortcuts (Constraint: Space=Pause/Resume, Esc=Halt/Exit, M=Toggle Mute)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (sessionState === 'on_break') {
+          if (breakTimer.isRunning) breakTimer.pause();
+          else breakTimer.resume();
+        } else if (sessionState === 'active') {
+          if (timer.isRunning) {
+            timer.pause();
+          } else {
+            if (timer.isComplete) {
+              timer.reset();
+              timer.start();
+            } else {
+              timer.resume();
+            }
+          }
+        }
+      } else if (e.code === 'Escape') {
+        e.preventDefault();
+        if (showSettings) {
+          setShowSettings(false);
+        } else if (sessionState === 'active') {
+          handleAutoSaveExit();
+        }
+      } else if (e.code === 'KeyM') {
+        e.preventDefault();
+        handleToggleSound();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sessionState, timer, breakTimer, showSettings]);
+
   const activeGoalForCanvas = goal || pomoDummyGoal;
   const currentElapsedSeconds = sessionState === 'on_break' ? breakTimer.elapsedSeconds : timer.elapsedSeconds;
   const currentElapsedMins = Math.floor(timer.elapsedSeconds / 60);
@@ -441,6 +485,7 @@ const FocusSession: React.FC<Props> = ({
               goal={activeGoalForCanvas}
               size={220}
               overrideAccruedMinutes={activeGoalForCanvas.accruedMinutes + accruedMins}
+              forceEcoMode={forceEcoMode}
             />
           </div>
           <PixelButton
@@ -623,6 +668,7 @@ const FocusSession: React.FC<Props> = ({
                   goal={activeGoalForCanvas}
                   size={200}
                   overrideAccruedMinutes={activeGoalForCanvas.accruedMinutes + currentElapsedSeconds / 60}
+                  forceEcoMode={forceEcoMode}
                 />
               </div>
 
@@ -762,6 +808,15 @@ const FocusSession: React.FC<Props> = ({
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
+        </div>
+
+        {/* Desktop Keyboard Shortcuts Legend (Accessibility & Speed) */}
+        <div className="hidden sm:flex items-center justify-center gap-3 pt-1 text-[7px] pixel-font text-green-600/80 tracking-widest uppercase select-none">
+          <span><kbd className="px-1 py-0.5 border border-green-900/60 bg-[#061206] text-green-400 font-mono text-[8px]">SPACE</kbd> {isTimerRunning ? 'PAUSE' : 'RESUME'}</span>
+          <span>•</span>
+          <span><kbd className="px-1 py-0.5 border border-green-900/60 bg-[#061206] text-green-400 font-mono text-[8px]">M</kbd> MUTE</span>
+          <span>•</span>
+          <span><kbd className="px-1 py-0.5 border border-green-900/60 bg-[#061206] text-green-400 font-mono text-[8px]">ESC</kbd> EXIT</span>
         </div>
       </div>
 

@@ -80,6 +80,7 @@ export interface UserProfile {
   preferences?: {
     soundscape?: string;
     soundEnabled?: boolean;
+    ecoCanopyMode?: boolean;
   };
 }
 
