@@ -6,6 +6,8 @@ interface AuthContextValue extends AuthSession {
   isLoading: boolean;
   isConfigured: boolean;
   isGoogleConfigured: boolean;
+  redirectError: string | null;
+  clearRedirectError: () => void;
   showAuthModal: boolean;
   setShowAuthModal: (show: boolean) => void;
   signInWithGoogle: () => Promise<void>;
@@ -27,32 +29,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return cached.isAnonymous ? 'guest' : 'google';
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [redirectError, setRedirectError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  const clearRedirectError = useCallback(() => {
+    authService.clearRedirectError();
+    setRedirectError(null);
+  }, []);
+
   useEffect(() => {
-    // Subscribe to live Firebase auth state changes
-    const unsubscribe = authService.subscribeToAuthState((activeUser) => {
-      setUser(activeUser);
-      if (activeUser) {
-        setProviderType(activeUser.isAnonymous ? 'guest' : 'google');
+    let unsubscribeLive: (() => void) | null = null;
+    let isMounted = true;
+
+    // Unified auth boot: resolves redirect result first, then falls back to current auth state
+    authService.initializeAuth().then((bootUser) => {
+      if (!isMounted) return;
+      setUser(bootUser);
+      if (bootUser) {
+        setProviderType(bootUser.isAnonymous ? 'guest' : 'google');
       } else {
         setProviderType(null);
       }
+      setRedirectError(authService.getRedirectError());
+      setIsLoading(false);
+
+      // Now attach live onAuthStateChanged listener for ongoing auth events (token refresh, signout, etc.)
+      unsubscribeLive = authService.subscribeToAuthState((activeUser) => {
+        if (!isMounted) return;
+        setUser(activeUser);
+        if (activeUser) {
+          setProviderType(activeUser.isAnonymous ? 'guest' : 'google');
+        } else {
+          setProviderType(null);
+        }
+      });
+    }).catch((err) => {
+      if (!isMounted) return;
+      console.error("[AuthProvider] Auth initialization error:", err);
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      if (unsubscribeLive) {
+        unsubscribeLive();
+      }
+    };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
     setIsLoading(true);
+    setRedirectError(null);
     try {
       const loggedUser = await authService.signInWithGoogle();
-      setUser(loggedUser);
-      setProviderType('google');
-      setShowAuthModal(false);
+      if (loggedUser) {
+        setUser(loggedUser);
+        setProviderType('google');
+        setShowAuthModal(false);
+      }
+      // On mobile redirect, browser will navigate away to Google
+    } catch (err: any) {
+      setRedirectError(err.message || 'Google authentication error.');
+      throw err;
     } finally {
-      setIsLoading(false);
+      if (!authService.isAuthRedirectInProgress()) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -112,6 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await authService.signOut();
     setUser(null);
     setProviderType(null);
+    setRedirectError(null);
   }, []);
 
   const isConfigured = authService.isConfigured();
@@ -123,6 +166,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading,
     isConfigured,
     isGoogleConfigured: isConfigured,
+    redirectError,
+    clearRedirectError,
     showAuthModal,
     setShowAuthModal,
     signInWithGoogle,

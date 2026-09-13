@@ -5,6 +5,7 @@ import SaplingCanvas from './components/SaplingCanvas';
 import LandingPage from './components/LandingPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { storageService } from './services/storageService';
+import { authService } from './services/authService';
 import { soundEngine } from './utils/audioEngine';
 
 // Lazy-loaded App Modules (Loaded on-demand to keep landing page bundle ultra-lean)
@@ -48,7 +49,7 @@ const parseViewMode = (rawHash: string): AppViewMode => {
 };
 
 const SaplingAppContent: React.FC = () => {
-  const { showAuthModal, setShowAuthModal, user, isAuthenticated, signOut } = useAuth();
+  const { showAuthModal, setShowAuthModal, user, isAuthenticated, signOut, isLoading, redirectError } = useAuth();
 
   // Determine initial view from URL hash
   const [viewMode, setViewMode] = useState<AppViewMode>(() => {
@@ -57,6 +58,25 @@ const SaplingAppContent: React.FC = () => {
     }
     return 'landing';
   });
+
+  // Automatically open AuthModal if a redirect error occurred so the user is informed
+  useEffect(() => {
+    if (redirectError) {
+      setShowAuthModal(true);
+    }
+  }, [redirectError, setShowAuthModal]);
+
+  // If returning from an authenticated mobile redirect, automatically navigate to app mode
+  useEffect(() => {
+    if (user && !user.isAnonymous) {
+      if (viewMode === 'landing') {
+        setViewMode('app');
+        if (!window.location.hash || window.location.hash === '#/' || window.location.hash === '#') {
+          window.location.hash = '#/app';
+        }
+      }
+    }
+  }, [user?.id, user?.isAnonymous, viewMode]);
 
   const [lowBatteryDetected, setLowBatteryDetected] = useState(false);
   const [batteryBannerDismissed, setBatteryBannerDismissed] = useState(false);
@@ -396,6 +416,23 @@ const SaplingAppContent: React.FC = () => {
     setSessionDurationMinutes(validMinutes);
     setActiveSessionGoal('pomodoro');
   };
+
+  // Calm botanical synchronizing state while resolving mobile OAuth redirect
+  if (isLoading && authService.isAuthRedirectInProgress()) {
+    return (
+      <div className="min-h-screen bg-[#061206] flex flex-col items-center justify-center p-4 text-center">
+        <div className="w-12 h-12 border-2 border-green-500/80 flex items-center justify-center relative shadow-[0_0_30px_rgba(34,197,94,0.3)] mb-4 animate-pulse">
+          <span className="w-3 h-3 bg-green-400" />
+        </div>
+        <h2 className="pixel-font text-xs text-green-300 uppercase tracking-widest font-bold mb-2">
+          SYNCHRONIZING SANCTUARY...
+        </h2>
+        <p className="font-mono text-[9px] text-green-500/80 tracking-wider">
+          RESTORE BIOMETRIC IDENTITY // CONNECTING TO SOIL
+        </p>
+      </div>
+    );
+  }
 
   // If in Public Website Mode, render the Landing Page
   if (viewMode === 'landing') {

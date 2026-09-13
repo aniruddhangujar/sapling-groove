@@ -386,22 +386,175 @@ export class StorageService {
 
       // Save merged profile locally in user-scoped namespace
       this.saveProfile(mergedProfile, userId);
-      return mergedProfile;
+
+      // Check and migrate any pending local guest data into the profile (Lossless & Idempotent)
+      const finalProfile = await this.migrateGuestDataIntoProfile(userId, mergedProfile);
+      return finalProfile;
     } catch (err: any) {
       console.warn("[StorageService] Could not pull from Firestore (using local):", err?.message);
-      return localProfile;
+      try {
+        return await this.migrateGuestDataIntoProfile(userId, localProfile);
+      } catch {
+        return localProfile;
+      }
     }
+  }
+
+  /**
+   * Deterministically and idempotently merges guest/local data into an authenticated profile.
+   * STRICT PERSISTENCE GATE: Only purges guest storage AFTER local and cloud persistence succeed.
+   * If any error occurs during persistence, guest data is preserved so migration can retry.
+   */
+  public async migrateGuestDataIntoProfile(userId: string, targetProfile: UserProfile): Promise<UserProfile> {
+    if (!userId || userId === 'guest' || userId.startsWith('guest_')) {
+      return targetProfile;
+    }
+
+    let guestRaw: string | null = null;
+    try {
+      guestRaw = localStorage.getItem(GUEST_PROFILE_KEY);
+      if (!guestRaw) {
+        guestRaw = localStorage.getItem(LEGACY_PROFILE_KEY);
+      }
+    } catch {
+      return targetProfile;
+    }
+
+    if (!guestRaw) {
+      return targetProfile;
+    }
+
+    let parsedGuest: any = null;
+    try {
+      parsedGuest = JSON.parse(guestRaw);
+    } catch (e) {
+      console.warn("[StorageService] Guest profile unparseable during migration:", e);
+      return targetProfile;
+    }
+
+    if (!parsedGuest || typeof parsedGuest !== 'object') {
+      return targetProfile;
+    }
+
+    // Validate and sanitize guest goals and logs
+    const rawGuestGrove = Array.isArray(parsedGuest.grove) ? parsedGuest.grove : [];
+    const validGuestGrove: SaplingGoal[] = [];
+    for (const g of rawGuestGrove) {
+      const validated = validateGoal(g);
+      if (validated) validGuestGrove.push(validated);
+    }
+
+    const rawGuestLogs = Array.isArray(parsedGuest.logs) ? parsedGuest.logs : [];
+    const validGuestLogs: FocusSessionLog[] = [];
+    for (const l of rawGuestLogs) {
+      const validated = validateLog(l);
+      if (validated) validGuestLogs.push(validated);
+    }
+
+    // If guest storage had no goals, no logs, and no focus minutes, clean up and exit
+    if (validGuestGrove.length === 0 && validGuestLogs.length === 0 && (!parsedGuest.totalFocusTime || parsedGuest.totalFocusTime <= 0)) {
+      try {
+        localStorage.removeItem(GUEST_PROFILE_KEY);
+        localStorage.removeItem(LEGACY_PROFILE_KEY);
+      } catch {}
+      return targetProfile;
+    }
+
+    // --- Deterministic Goal Merge (Idempotent) ---
+    // Match by existing ID first, or by identical (name + treeType) if ID was regenerated
+    const goalMap = new Map<string, SaplingGoal>();
+    targetProfile.grove.forEach(g => goalMap.set(g.id, g));
+
+    for (const guestGoal of validGuestGrove) {
+      let existing = goalMap.get(guestGoal.id);
+      if (!existing) {
+        existing = Array.from(goalMap.values()).find(
+          g => g.name.toLowerCase() === guestGoal.name.toLowerCase() && g.type === guestGoal.type
+        );
+      }
+
+      if (!existing) {
+        // Brand new goal from guest session
+        goalMap.set(guestGoal.id, guestGoal);
+      } else {
+        // Merge progress idempotently: max accrued minutes, earliest start, latest focus, best health
+        const mergedAccrued = Math.max(existing.accruedMinutes, guestGoal.accruedMinutes);
+        const targetMins = existing.totalTargetMinutes || guestGoal.totalTargetMinutes || 25;
+        const isComplete = Boolean(existing.isComplete || guestGoal.isComplete || mergedAccrued >= targetMins);
+        const latestFocus = Math.max(existing.lastFocusDate || 0, guestGoal.lastFocusDate || 0) || undefined;
+        const bestHealth = Math.max(existing.health, guestGoal.health);
+
+        goalMap.set(existing.id, {
+          ...existing,
+          accruedMinutes: mergedAccrued,
+          isComplete,
+          lastFocusDate: latestFocus,
+          health: bestHealth
+        });
+      }
+    }
+
+    // --- Deterministic Session Log Merge (Append-only Idempotent Deduplication) ---
+    const logMap = new Map<string, FocusSessionLog>();
+    const registerLog = (log: FocusSessionLog) => {
+      const compositeKey = `${log.startedAt}_${log.goalName}`;
+      if (!logMap.has(log.id) && !logMap.has(compositeKey)) {
+        logMap.set(log.id, log);
+        logMap.set(compositeKey, log);
+      }
+    };
+
+    targetProfile.logs.forEach(registerLog);
+    validGuestLogs.forEach(registerLog);
+
+    const mergedLogs = Array.from(new Set(logMap.values())).sort((a, b) => b.startedAt - a.startedAt);
+
+    // Calculate merged total focus time
+    const mergedFocusTime = Math.max(
+      targetProfile.totalFocusTime,
+      (typeof parsedGuest.totalFocusTime === 'number' ? parsedGuest.totalFocusTime : 0),
+      mergedLogs.reduce((sum, l) => sum + l.durationMinutes, 0)
+    );
+
+    const mergedProfile: UserProfile = {
+      ...targetProfile,
+      userId,
+      totalFocusTime: mergedFocusTime,
+      grove: Array.from(goalMap.values()),
+      logs: mergedLogs,
+      preferences: {
+        ...targetProfile.preferences,
+        soundscape: targetProfile.preferences?.soundscape || parsedGuest.preferences?.soundscape || 'zen',
+        soundEnabled: targetProfile.preferences?.soundEnabled ?? parsedGuest.preferences?.soundEnabled ?? true
+      }
+    };
+
+    // --- STRICT PERSISTENCE GATE ---
+    // 1. Write merged profile to authenticated user local storage
+    this.saveProfile(mergedProfile, userId);
+
+    // 2. Persist to Firestore if online
+    try {
+      await this.syncProfileToFirestore(userId, mergedProfile);
+      // 3. ONLY purge guest data AFTER successful persistence!
+      try {
+        localStorage.removeItem(GUEST_PROFILE_KEY);
+        localStorage.removeItem(LEGACY_PROFILE_KEY);
+      } catch {}
+    } catch (err: any) {
+      console.warn("[StorageService] Cloud sync delayed during guest migration; guest data preserved for retry:", err?.message);
+      // If Firestore sync failed, DO NOT delete guest data. It will safely retry on next sync.
+    }
+
+    return mergedProfile;
   }
 
   /**
    * Safely migrates local guest data to an authenticated cloud user account
    */
   public async migrateGuestData(userId: string): Promise<UserProfile> {
-    const profile = this.getProfile();
-    profile.userId = userId;
-    this.saveProfile(profile);
-    await this.syncProfileToFirestore(userId, profile);
-    return profile;
+    const current = this.getProfile(userId);
+    return this.migrateGuestDataIntoProfile(userId, current);
   }
 
   /**

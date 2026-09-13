@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PixelButton from './PixelButton';
+import { isMobileBrowser } from '../utils/deviceDetection';
 
 interface Props {
   onClose: () => void;
@@ -13,6 +14,8 @@ type EmailMode = 'signin' | 'signup' | 'reset';
 const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
   const { 
     isConfigured, 
+    redirectError,
+    clearRedirectError,
     signInWithGoogle, 
     signInWithGithub, 
     signInWithEmail, 
@@ -30,29 +33,51 @@ const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Sync redirectError from context when modal opens or redirect fails
+  useEffect(() => {
+    if (redirectError) {
+      setErrorMsg(redirectError);
+    }
+  }, [redirectError]);
+
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isProcessing) {
+        clearRedirectError();
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isProcessing, onClose]);
+  }, [isProcessing, onClose, clearRedirectError]);
 
   const handleGoogleAuth = async () => {
     setErrorMsg(null);
-    setStatusMsg(null);
+    clearRedirectError();
     setIsProcessing(true);
+
+    const isMobile = isMobileBrowser();
+    if (isMobile) {
+      setStatusMsg('Redirecting to Google secure authentication...');
+    } else {
+      setStatusMsg(null);
+    }
+
     try {
       await signInWithGoogle();
-      onSuccess?.();
-      onClose();
+      if (!isMobile) {
+        onSuccess?.();
+        onClose();
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Google authentication error.');
-    } finally {
+      setStatusMsg(null);
       setIsProcessing(false);
+    } finally {
+      if (!isMobile) {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -158,7 +183,7 @@ const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
             </div>
           </div>
           <button 
-            onClick={onClose} 
+            onClick={() => { clearRedirectError(); onClose(); }} 
             disabled={isProcessing}
             className="w-7 h-7 flex items-center justify-center text-green-500 hover:text-green-300 text-lg font-bold transition-colors disabled:opacity-50"
             aria-label="Close authentication modal"
@@ -171,7 +196,7 @@ const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
         <div className="grid grid-cols-3 gap-1 border border-green-950 bg-[#040b04] p-1 mb-4">
           <button
             type="button"
-            onClick={() => { setActiveTab('oauth'); setErrorMsg(null); }}
+            onClick={() => { setActiveTab('oauth'); setErrorMsg(null); clearRedirectError(); }}
             className={`py-1.5 px-2 text-[7.5px] pixel-font uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
               activeTab === 'oauth'
                 ? 'bg-green-500/20 text-white border border-green-400/80 shadow-[0_0_10px_rgba(74,222,128,0.2)] font-bold'
@@ -182,7 +207,7 @@ const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
           </button>
           <button
             type="button"
-            onClick={() => { setActiveTab('email'); setErrorMsg(null); }}
+            onClick={() => { setActiveTab('email'); setErrorMsg(null); clearRedirectError(); }}
             className={`py-1.5 px-2 text-[7.5px] pixel-font uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
               activeTab === 'email'
                 ? 'bg-green-500/20 text-white border border-green-400/80 shadow-[0_0_10px_rgba(74,222,128,0.2)] font-bold'
@@ -193,7 +218,7 @@ const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
           </button>
           <button
             type="button"
-            onClick={() => { setActiveTab('guest'); setErrorMsg(null); }}
+            onClick={() => { setActiveTab('guest'); setErrorMsg(null); clearRedirectError(); }}
             className={`py-1.5 px-2 text-[7.5px] pixel-font uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
               activeTab === 'guest'
                 ? 'bg-green-500/20 text-white border border-green-400/80 shadow-[0_0_10px_rgba(74,222,128,0.2)] font-bold'

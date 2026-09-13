@@ -1,5 +1,7 @@
 import { 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut as firebaseSignOut, 
@@ -12,15 +14,46 @@ import {
 import { User } from '../types';
 import { auth, googleProvider, githubProvider, isFirebaseConfigured } from './firebase';
 import { storageService } from './storageService';
+import { isMobileBrowser } from '../utils/deviceDetection';
 
 const AUTH_USER_KEY = 'sapling_auth_user_v1';
+const AUTH_REDIRECT_MARKER = 'sapling_auth_redirect_in_progress';
 
 export class AuthService {
+  private redirectError: string | null = null;
+  private initPromise: Promise<User | null> | null = null;
+  private hasProcessedRedirect = false;
+
   /**
    * Returns whether Firebase authentication is configured in the environment
    */
   public isConfigured(): boolean {
     return isFirebaseConfigured();
+  }
+
+  /**
+   * Checks if an OAuth redirect is currently in flight (auxiliary state)
+   */
+  public isAuthRedirectInProgress(): boolean {
+    try {
+      return typeof sessionStorage !== 'undefined' && sessionStorage.getItem(AUTH_REDIRECT_MARKER) !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Retrieves any error that occurred during redirect result resolution
+   */
+  public getRedirectError(): string | null {
+    return this.redirectError;
+  }
+
+  /**
+   * Clears transient redirect error
+   */
+  public clearRedirectError(): void {
+    this.redirectError = null;
   }
 
   /**
@@ -64,7 +97,7 @@ export class AuthService {
   }
 
   /**
-   * Subscribes to real-time auth state changes
+   * Subscribes to real-time auth state changes after initial auth boot
    */
   public subscribeToAuthState(callback: (user: User | null) => void): () => void {
     if (!auth) {
@@ -92,15 +125,138 @@ export class AuthService {
   }
 
   /**
-   * Initiates Google Sign-In flow via popup
+   * Dedicated redirect result handler.
+   * Safely calls getRedirectResult(auth), processes the resulting user when present,
+   * catches and classifies redirect errors, and never crashes startup.
    */
-  public async signInWithGoogle(): Promise<User> {
+  public async handleRedirectResult(): Promise<User | null> {
+    if (!auth) return null;
+    if (this.hasProcessedRedirect) return null;
+    this.hasProcessedRedirect = true;
+
+    try {
+      const redirectResult = await getRedirectResult(auth);
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem(AUTH_REDIRECT_MARKER);
+        }
+      } catch {}
+
+      if (redirectResult && redirectResult.user) {
+        const saplingUser = this.mapFirebaseUser(redirectResult.user);
+        this.saveUser(saplingUser);
+        return saplingUser;
+      }
+      return null;
+    } catch (err: any) {
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem(AUTH_REDIRECT_MARKER);
+        }
+      } catch {}
+
+      // Log non-sensitive diagnostics
+      console.error("[AuthService] Redirect result error:", {
+        code: err?.code,
+        message: err?.message
+      });
+
+      this.redirectError = this.formatAuthError(err);
+      // Never crash startup on redirect failure
+      return null;
+    }
+  }
+
+  /**
+   * Unified authentication initialization sequence to prevent race conditions
+   * between getRedirectResult and onAuthStateChanged.
+   */
+  public async initializeAuth(): Promise<User | null> {
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    this.initPromise = (async () => {
+      if (!auth) {
+        return this.getCurrentUser();
+      }
+
+      // Step 1: Process redirect result first
+      const redirectUser = await this.handleRedirectResult();
+      if (redirectUser) {
+        return redirectUser;
+      }
+
+      // Step 2: If redirect result had no user, check if already signed in
+      if (auth.currentUser) {
+        const activeUser = this.mapFirebaseUser(auth.currentUser);
+        this.saveUser(activeUser);
+        return activeUser;
+      }
+
+      // Step 3: Await initial auth state resolution
+      return new Promise<User | null>((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+          unsubscribe();
+          if (fbUser) {
+            const user = this.mapFirebaseUser(fbUser);
+            this.saveUser(user);
+            resolve(user);
+          } else {
+            const cached = this.getCurrentUser();
+            if (cached?.isAnonymous) {
+              resolve(cached);
+            } else {
+              this.saveUser(null);
+              resolve(null);
+            }
+          }
+        }, (err) => {
+          console.error("[AuthService] Initial auth state error:", {
+            code: (err as any)?.code,
+            message: err?.message
+          });
+          resolve(this.getCurrentUser());
+        });
+      });
+    })();
+
+    return this.initPromise;
+  }
+
+  /**
+   * Cross-platform Google Sign-In:
+   * Desktop: signInWithPopup() (preserves working desktop flow)
+   * Mobile: signInWithRedirect() (fixes Android Chrome popup failure)
+   */
+  public async signInWithGoogle(): Promise<User | null> {
     if (!this.isConfigured() || !auth) {
       throw new Error(
         "Firebase is not configured in .env.local. Add your VITE_FIREBASE_* credentials to enable live Google sign-in."
       );
     }
 
+    const isMobile = isMobileBrowser();
+
+    if (isMobile) {
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(AUTH_REDIRECT_MARKER, 'google');
+        }
+        await signInWithRedirect(auth, googleProvider);
+        // Browser is navigating away for OAuth redirect
+        return null;
+      } catch (err: any) {
+        try {
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem(AUTH_REDIRECT_MARKER);
+          }
+        } catch {}
+        throw new Error(this.formatAuthError(err));
+      }
+    }
+
+    // Desktop: Continue using popup
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = this.mapFirebaseUser(result.user);
@@ -230,6 +386,12 @@ export class AuthService {
       } catch {}
     }
     this.saveUser(null);
+    this.redirectError = null;
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem(AUTH_REDIRECT_MARKER);
+      }
+    } catch {}
     if (currentUid && !currentUid.startsWith('guest_')) {
       storageService.purgeAuthenticatedStorage(currentUid);
     }
@@ -237,16 +399,34 @@ export class AuthService {
 
   /**
    * Translates Firebase auth errors into human-readable terminal telemetry
+   * Logs non-sensitive diagnostics to console while returning clear messages to UI
    */
   public formatAuthError(err: any): string {
     const code = err?.code || '';
+
+    // Safe diagnostic logging (never log credentials, tokens, or passwords)
+    if (typeof window !== 'undefined') {
+      console.error("[Auth Diagnostic]", {
+        code,
+        message: err?.message
+      });
+    }
+
     switch (code) {
+      case 'auth/internal-error':
+        return 'An internal authentication error occurred while communicating with the identity provider. Please verify your connection or try again.';
+      case 'auth/network-request-failed':
+        return 'Network communication failed. Please check your internet connection and retry.';
+      case 'auth/unauthorized-domain':
+        return 'Current domain is not authorized in Firebase Console > Authentication > Settings > Authorized domains.';
+      case 'auth/configuration-not-found':
+        return 'Authentication configuration not found for this project. Please check Firebase configuration.';
+      case 'auth/popup-blocked':
+        return 'Authentication popup was blocked by your browser. Please allow popups or use redirect authentication.';
       case 'auth/popup-closed-by-user':
         return 'Authentication window closed before completion.';
       case 'auth/cancelled-popup-request':
         return 'Authentication request cancelled.';
-      case 'auth/popup-blocked':
-        return 'Authentication popup was blocked by your browser. Please allow popups for this site.';
       case 'auth/account-exists-with-different-credential':
         return 'An account already exists with the same email using a different sign-in method.';
       case 'auth/invalid-credential':
@@ -263,9 +443,11 @@ export class AuthService {
         return 'Access temporarily restricted due to repeated attempts. Please wait a moment.';
       case 'auth/operation-not-allowed':
         return 'This authentication provider is not enabled in your Firebase project console.';
-      case 'auth/unauthorized-domain':
-        return 'Current domain is not authorized in Firebase Console > Authentication > Settings > Authorized domains.';
       default:
+        // Strip raw "Firebase: Error (...)" text for clean presentation
+        if (typeof err?.message === 'string' && err.message.startsWith('Firebase:')) {
+          return 'Authentication encountered an unexpected issue. Please try again.';
+        }
         return err?.message || 'Authentication error encountered.';
     }
   }
