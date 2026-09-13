@@ -58,6 +58,14 @@ const AniChat: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ base64: string; mimeType: string } | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  // Auto-revert clear confirmation state after 5 seconds if not confirmed
+  useEffect(() => {
+    if (!confirmClear) return;
+    const timer = setTimeout(() => setConfirmClear(false), 5000);
+    return () => clearTimeout(timer);
+  }, [confirmClear]);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -477,22 +485,48 @@ const AniChat: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Clear Conversation Shortcut */}
-        <button
-          onClick={() => {
-            if (window.confirm("Reset Ani conversation memory?")) {
-              const initial: ChatMessage[] = [
-                { role: 'model', parts: [{ text: "Memory refreshed. The soil is clear. What project or intention shall we architect now?" }] }
-              ];
-              setMessages(initial);
-              localStorage.setItem('sapling_ani_chat_v3', JSON.stringify(initial));
-            }
-          }}
-          className="text-green-600 hover:text-green-400 pixel-font text-[6.5px] sm:text-[7.5px] uppercase tracking-wider border border-green-950 px-1.5 xs:px-2 py-1 bg-[#050c05] transition-colors shrink-0"
-          title="Reset conversation"
-        >
-          [ CLEAR ]
-        </button>
+        {/* Clear Conversation Shortcut with In-Place 2-Step Confirmation */}
+        {!confirmClear ? (
+          <button
+            type="button"
+            onClick={() => setConfirmClear(true)}
+            className="text-green-400 hover:text-green-200 pixel-font text-[7px] sm:text-[8px] uppercase tracking-wider border border-green-800/80 px-2 xs:px-2.5 py-1 sm:py-1.5 bg-[#061406] hover:bg-[#0c240c] transition-all shrink-0 min-h-[32px] sm:min-h-[36px] flex items-center gap-1.5 shadow-sm active:scale-[0.97] cursor-pointer"
+            title="Reset conversation memory"
+            aria-label="Clear chat memory"
+          >
+            <span className="text-green-500">↺</span>
+            <span>[ CLEAR ]</span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-1 shrink-0 animate-in fade-in zoom-in-95 duration-150">
+            <button
+              type="button"
+              onClick={() => {
+                const initial: ChatMessage[] = [
+                  { role: 'model', parts: [{ text: "Memory refreshed. The soil is clear. What project or intention shall we architect now?" }] }
+                ];
+                setMessages(initial);
+                try {
+                  localStorage.setItem('sapling_ani_chat_v3', JSON.stringify(initial));
+                } catch {}
+                setConfirmClear(false);
+              }}
+              className="text-amber-200 hover:text-white pixel-font text-[7px] sm:text-[7.5px] uppercase tracking-wider border-2 border-amber-500/90 px-2 sm:px-2.5 py-1 sm:py-1.5 bg-[#180e04] hover:bg-[#281504] transition-all shrink-0 min-h-[32px] sm:min-h-[36px] font-bold shadow-[0_0_12px_rgba(245,158,11,0.35)] animate-pulse cursor-pointer"
+              title="Confirm memory reset"
+            >
+              [ RESET MEMORY? ]
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmClear(false)}
+              className="text-green-400 hover:text-green-200 pixel-font text-[8px] px-1.5 py-1 border border-green-800 bg-[#050c05] hover:bg-[#0a180a] min-h-[32px] sm:min-h-[36px] min-w-[28px] sm:min-w-[32px] flex items-center justify-center transition-colors cursor-pointer"
+              title="Cancel reset"
+              aria-label="Cancel reset"
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Messages Area */}
