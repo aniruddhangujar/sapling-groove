@@ -22,6 +22,20 @@ export const SaplingLoader: React.FC<SaplingLoaderProps> = ({
 
   const mountTimeRef = useRef(Date.now());
   const hasTriggeredExitRef = useRef(false);
+  const [isFontReady, setIsFontReady] = useState(false);
+
+  // Ensure actual fonts (Press Start 2P, Orbitron, Space Mono) are primed before displaying typography
+  useEffect(() => {
+    if (typeof document !== 'undefined' && document.fonts) {
+      Promise.all([
+        document.fonts.load('8px "Press Start 2P"'),
+        document.fonts.load('bold 16px "Orbitron"'),
+        document.fonts.load('8px "Space Mono"')
+      ]).then(() => setIsFontReady(true)).catch(() => setIsFontReady(true));
+    } else {
+      setIsFontReady(true);
+    }
+  }, []);
 
   // Check user preference for reduced motion
   useEffect(() => {
@@ -224,12 +238,12 @@ export const SaplingLoader: React.FC<SaplingLoaderProps> = ({
         </div>
 
         {/* Brand Title */}
-        <h1 className="font-orbitron font-bold text-sm sm:text-base text-white tracking-[0.25em] uppercase mb-1 drop-shadow-[0_0_15px_rgba(74,222,128,0.3)]">
+        <h1 className={`font-orbitron font-bold text-sm sm:text-base text-white tracking-[0.25em] uppercase mb-1 drop-shadow-[0_0_15px_rgba(74,222,128,0.3)] transition-opacity duration-150 ${isFontReady ? 'opacity-100' : 'opacity-0'}`}>
           SAPLING
         </h1>
 
         {/* Botanical Germination Subtitle */}
-        <div className="pixel-font text-[7px] sm:text-[8px] text-[#4ade80] tracking-[0.18em] uppercase font-bold mb-4">
+        <div className={`pixel-font text-[7px] sm:text-[8px] text-[#4ade80] tracking-[0.18em] uppercase font-bold mb-4 transition-opacity duration-150 ${isFontReady ? 'opacity-100' : 'opacity-0'}`}>
           {statusText}
         </div>
 
@@ -254,7 +268,7 @@ export const SaplingLoader: React.FC<SaplingLoaderProps> = ({
         </div>
 
         {/* Stage Telemetry Tag */}
-        <div className="font-display text-[7px] sm:text-[7.5px] text-green-500/80 tracking-widest uppercase">
+        <div className={`font-display text-[7px] sm:text-[7.5px] text-green-500/80 tracking-widest uppercase transition-opacity duration-150 ${isFontReady ? 'opacity-100' : 'opacity-0'}`}>
           {stageCode}
         </div>
       </div>

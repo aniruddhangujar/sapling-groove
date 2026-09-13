@@ -1,4 +1,15 @@
-import { ChatMessage, UserProfile, SaplingGoal, FocusSessionLog } from '../types';
+import { ChatMessage, UserProfile, SaplingGoal, FocusSessionLog, AniActionPayload } from '../types';
+
+export interface GroveGoalSummary {
+  id: string;
+  name: string;
+  species: string;
+  progress: number;
+  accruedMinutes: number;
+  targetMinutes: number;
+  health: number;
+  daysSinceFocus?: number;
+}
 
 export interface GroveContext {
   currentGoalName?: string;
@@ -6,21 +17,62 @@ export interface GroveContext {
   currentGoalProgress?: number;
   currentGoalAccruedMins?: number;
   currentGoalTargetMins?: number;
+  allActiveGoals?: GroveGoalSummary[];
+  neglectedGoals?: string[];
+  completedCanopyCount?: number;
   totalFocusMinutes?: number;
   todayFocusMinutes?: number;
   recentSessions?: Array<{ mode: string; durationMinutes: number; goalName: string }>;
   activeSessionMode?: string;
+  soundPreference?: string;
 }
 
 export interface AniResponse {
   text: string;
+  action?: AniActionPayload;
   status: 'ok' | 'offline' | 'error';
   model?: string;
 }
 
 /**
- * Builds a clean, focused context summary of the user's Sapling state
- * without dumping sensitive or redundant localStorage objects.
+ * Extracts and parses structured action payload embedded in Ani's response
+ */
+export function parseAniResponse(rawText: string): { cleanText: string; action?: AniActionPayload } {
+  if (!rawText) return { cleanText: '' };
+
+  const actionRegex = /<ani_action>([\s\S]*?)<\/ani_action>/i;
+  const match = rawText.match(actionRegex);
+
+  if (match) {
+    try {
+      const jsonStr = match[1].trim();
+      const action = JSON.parse(jsonStr) as AniActionPayload;
+      const cleanText = rawText.replace(match[0], '').trim();
+      return { cleanText, action };
+    } catch (e) {
+      console.warn("[AniService] Failed to parse ani_action JSON:", e);
+      return { cleanText: rawText.replace(match[0], '').trim() };
+    }
+  }
+
+  // Fallback: check for markdown code block with action JSON
+  const jsonBlockRegex = /```(?:json)?\s*(\{\s*"type"\s*:\s*"(?:plant_goal|start_ritual|switch_soundscape|task_breakdown)"[\s\S]*?\})\s*```/i;
+  const jsonMatch = rawText.match(jsonBlockRegex);
+  if (jsonMatch) {
+    try {
+      const action = JSON.parse(jsonMatch[1].trim()) as AniActionPayload;
+      const cleanText = rawText.replace(jsonMatch[0], '').trim();
+      return { cleanText, action };
+    } catch (e) {
+      // ignore parsing error
+    }
+  }
+
+  return { cleanText: rawText.trim() };
+}
+
+/**
+ * Builds a clean, rich context summary of the user's Sapling state
  */
 export function buildGroveContext(
   profile?: UserProfile,
@@ -31,10 +83,14 @@ export function buildGroveContext(
     return {
       totalFocusMinutes: 0,
       todayFocusMinutes: 0,
-      recentSessions: []
+      recentSessions: [],
+      allActiveGoals: [],
+      neglectedGoals: [],
+      completedCanopyCount: 0
     };
   }
 
+  const now = Date.now();
   // Calculate today's focus minutes
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
@@ -44,10 +100,41 @@ export function buildGroveContext(
     .filter(log => log.endedAt >= startOfDayMs)
     .reduce((sum, log) => sum + (log.durationMinutes || 0), 0);
 
+  const activeGoals = (profile.grove || []).filter(g => !g.isComplete);
+  const completedGoals = (profile.grove || []).filter(g => g.isComplete);
+
   // Get active goal (first incomplete goal or active session goal)
   const activeGoal = typeof activeSessionGoal === 'object' && activeSessionGoal
     ? activeSessionGoal
-    : (profile.grove || []).find(g => !g.isComplete);
+    : activeGoals[0];
+
+  const allActiveGoals: GroveGoalSummary[] = activeGoals.map(g => {
+    const progress = g.totalTargetMinutes > 0
+      ? Math.min(100, Math.round((g.accruedMinutes / g.totalTargetMinutes) * 100))
+      : 0;
+    const daysSince = g.lastFocusDate
+      ? Math.floor((now - g.lastFocusDate) / (1000 * 60 * 60 * 24))
+      : undefined;
+    return {
+      id: g.id,
+      name: g.name,
+      species: g.type,
+      progress,
+      accruedMinutes: g.accruedMinutes,
+      targetMinutes: g.totalTargetMinutes,
+      health: g.health,
+      daysSinceFocus: daysSince
+    };
+  });
+
+  const neglectedGoals = activeGoals
+    .filter(g => {
+      if (g.health < 80) return true;
+      if (g.lastFocusDate && (now - g.lastFocusDate) > 48 * 60 * 60 * 1000) return true;
+      if (!g.lastFocusDate && (now - g.startDate) > 24 * 60 * 60 * 1000) return true;
+      return false;
+    })
+    .map(g => g.name);
 
   // Recent 3 session summaries
   const recentSessions = (profile.logs || [])
@@ -68,10 +155,14 @@ export function buildGroveContext(
     currentGoalProgress: activeGoal ? progress : undefined,
     currentGoalAccruedMins: activeGoal ? activeGoal.accruedMinutes : undefined,
     currentGoalTargetMins: activeGoal ? activeGoal.totalTargetMinutes : undefined,
+    allActiveGoals,
+    neglectedGoals,
+    completedCanopyCount: completedGoals.length,
     totalFocusMinutes: profile.totalFocusTime,
     todayFocusMinutes,
     recentSessions,
-    activeSessionMode: activeMode
+    activeSessionMode: activeMode,
+    soundPreference: profile.preferences?.soundscape
   };
 }
 
@@ -108,8 +199,10 @@ export const aniService = {
 
       const data = await response.json();
       if (data.text) {
+        const { cleanText, action } = parseAniResponse(data.text);
         return {
-          text: data.text,
+          text: cleanText,
+          action,
           status: 'ok',
           model: data.model || 'gemini-2.5-flash'
         };

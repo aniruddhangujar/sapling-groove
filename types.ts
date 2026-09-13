@@ -83,12 +83,48 @@ export interface UserProfile {
   };
 }
 
+export type AniActionType = 
+  | 'plant_goal' 
+  | 'start_ritual' 
+  | 'switch_soundscape'
+  | 'task_breakdown';
+
+export interface AniGoalProposal {
+  name: string;
+  type: TreeType;
+  timeline?: TimelineType;
+  durationInDays?: number;
+  dailyTargetMinutes: number;
+  totalTargetMinutes: number;
+}
+
+export interface AniActionPayload {
+  type: AniActionType;
+  goalProposal?: AniGoalProposal;
+  sessionConfig?: {
+    mode: FocusMode;
+    goalId?: string;
+    goalName?: string;
+    durationMinutes?: number;
+  };
+  soundscapeId?: string;
+  soundscapeName?: string;
+  breakdownTasks?: Array<{
+    title: string;
+    treeType: TreeType;
+    dailyMinutes: number;
+    durationInDays: number;
+  }>;
+}
+
 export interface ChatMessage {
   role: 'user' | 'model';
   parts: (
     | { text: string }
     | { inlineData: { mimeType: string; data: string } }
   )[];
+  action?: AniActionPayload;
+  actionExecuted?: boolean;
 }
 
 export type AppTab = 'grove' | 'logs' | 'tasks' | 'ani';

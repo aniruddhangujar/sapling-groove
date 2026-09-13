@@ -5,6 +5,7 @@ import SaplingCanvas from './components/SaplingCanvas';
 import LandingPage from './components/LandingPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { storageService } from './services/storageService';
+import { soundEngine } from './utils/audioEngine';
 
 // Lazy-loaded App Modules (Loaded on-demand to keep landing page bundle ultra-lean)
 const GoalModal = lazy(() => import('./components/GoalModal'));
@@ -697,7 +698,30 @@ const SaplingAppContent: React.FC = () => {
               </span>
             </div>
           }>
-            <AniChat profile={profile} activeSessionGoal={activeSessionGoal} />
+            <AniChat 
+              profile={profile} 
+              activeSessionGoal={activeSessionGoal} 
+              onPlantGoal={addGoal}
+              onStartRitual={(goal, mode) => {
+                if (goal === 'pomodoro') {
+                  setUtilityMode(mode);
+                  startUtilityRitual();
+                } else {
+                  startGoalRitual(goal, mode);
+                }
+              }}
+              onSelectSoundscape={(trackId) => {
+                soundEngine.playTrack(trackId);
+                setProfile(prev => ({
+                  ...prev,
+                  preferences: {
+                    ...prev.preferences,
+                    soundscape: trackId
+                  }
+                }));
+              }}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+            />
           </Suspense>
         )}
       </main>
