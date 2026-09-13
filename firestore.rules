@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default deny all access across the entire database
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User-isolated tree: all student productivity data lives under users/{userId}
+    match /users/{userId} {
+      // Identity check: caller must be authenticated and their Firebase Auth UID must match
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Root user profile document
+      allow read: if isOwner();
+      allow write: if isOwner() 
+        && request.resource.data.keys().hasOnly(['userId', 'displayName', 'email', 'isPremium', 'totalFocusTime', 'updatedAt', 'createdAt'])
+        && request.resource.data.totalFocusTime is number
+        && request.resource.data.totalFocusTime >= 0;
+
+      // Goals subcollection: users/{userId}/goals/{goalId}
+      match /goals/{goalId} {
+        allow read: if isOwner();
+        allow delete: if isOwner();
+        allow create, update: if isOwner()
+          && request.resource.data.keys().hasOnly([
+            'id', 'name', 'type', 'timeline', 'startDate', 'durationInDays', 
+            'dailyTargetMinutes', 'totalTargetMinutes', 'accruedMinutes', 
+            'lastFocusDate', 'isComplete', 'health', 'perfectionScore', 'updatedAt'
+          ])
+          && request.resource.data.name is string 
+          && request.resource.data.name.size() <= 120
+          && request.resource.data.type in [
+            'Oak', 'Cherry Blossom', 'Pine', 'Bamboo', 'Cactus', 
+            'Maple', 'Baobab', 'Cedar', 'Willow', 'Sequoia', 'Bonsai'
+          ]
+          && request.resource.data.accruedMinutes is number
+          && request.resource.data.accruedMinutes >= 0
+          && request.resource.data.totalTargetMinutes is number
+          && request.resource.data.totalTargetMinutes >= 1
+          && request.resource.data.health is number
+          && request.resource.data.health >= 0 
+          && request.resource.data.health <= 100;
+      }
+
+      // Sessions subcollection: users/{userId}/sessions/{sessionId}
+      // CRITICAL PRODUCTION RULE: Sessions are IMMUTABLE historical records.
+      // Once created by the authenticated owner, they cannot be modified or deleted by the client.
+      match /sessions/{sessionId} {
+        allow read: if isOwner();
+        allow create: if isOwner()
+          && request.resource.data.keys().hasOnly([
+            'id', 'goalId', 'goalName', 'treeType', 'mode', 
+            'startedAt', 'endedAt', 'durationMinutes', 'completed', 'createdAt'
+          ])
+          && request.resource.data.mode in ['chronos', 'groove']
+          && request.resource.data.durationMinutes is number
+          && request.resource.data.durationMinutes >= 0
+          && request.resource.data.durationMinutes <= 720 // 12 hour maximum reasonable single session bound
+          && request.resource.data.goalName is string
+          && request.resource.data.goalName.size() <= 120;
+        
+        // Strictly prevent updates and deletions from client
+        allow update, delete: if false;
+      }
+
+      // Preferences subcollection: users/{userId}/preferences/{prefDoc}
+      match /preferences/{prefDoc} {
+        allow read: if isOwner();
+        allow write: if isOwner()
+          && request.resource.data.keys().hasOnly(['soundscape', 'soundEnabled', 'updatedAt'])
+          && (!('soundscape' in request.resource.data) || request.resource.data.soundscape in ['zen', 'nature', 'rain', 'none']);
+      }
+    }
+  }
+}

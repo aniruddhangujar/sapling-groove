@@ -10,6 +10,7 @@ interface Props {
   goal: SaplingGoal | null;
   mode?: FocusMode;
   visualMode?: PomoVisualMode;
+  durationMinutes?: number;
   onFinish: (minutes: number, isComplete: boolean, log: FocusSessionLog) => void;
   onCancel: () => void;
 }
@@ -111,13 +112,19 @@ const FocusSession: React.FC<Props> = ({
   goal,
   mode = 'chronos',
   visualMode = 'clock',
+  durationMinutes,
   onFinish,
   onCancel
 }) => {
   const remainingToMaturityMinutes = goal 
     ? Math.max(1, goal.totalTargetMinutes - goal.accruedMinutes) 
     : 25;
-  const targetDurationSeconds = goal 
+  const validDurationMinutes = typeof durationMinutes === 'number' && !isNaN(durationMinutes) && durationMinutes > 0
+    ? durationMinutes 
+    : undefined;
+  const targetDurationSeconds = validDurationMinutes
+    ? validDurationMinutes * 60
+    : goal 
     ? Math.min(goal.dailyTargetMinutes, remainingToMaturityMinutes) * 60 
     : 25 * 60;
   
@@ -133,6 +140,7 @@ const FocusSession: React.FC<Props> = ({
   const [accruedMins, setAccruedMins] = useState(0);
 
   const startTimestampRef = useRef<number>(Date.now());
+  const isFinishingRef = useRef<boolean>(false);
   const focusMode: FocusMode = mode === 'groove' ? 'groove' : 'chronos';
 
   // Fallback dummy goal for Pomodoro mode tree visualization
@@ -183,6 +191,11 @@ const FocusSession: React.FC<Props> = ({
     }
   });
 
+  // Auto-start ritual timer immediately on mount
+  useEffect(() => {
+    timer.start();
+  }, []);
+
   // Start sound when ritual is running and music is enabled
   useEffect(() => {
     if (isMusicEnabled && selectedMusic.id !== 'none' && (timer.isRunning || breakTimer.isRunning)) {
@@ -200,6 +213,36 @@ const FocusSession: React.FC<Props> = ({
       soundEngine.stop();
     };
   }, []);
+
+  // In-progress state persistence for recovery across tab suspension / accidental reloads
+  // CRITICAL: Does NOT auto-complete sessions. Only persists in-progress snapshot locally.
+  useEffect(() => {
+    const saveInProgressState = () => {
+      if (timer.isRunning && timer.elapsedSeconds > 10 && !isFinishingRef.current && sessionState === 'active') {
+        const recoveryData = {
+          goalId: goal?.id,
+          goalName: goal?.name || (focusMode === 'groove' ? 'Groove Session' : 'Pomodoro Session'),
+          treeType: goal?.type || TreeType.PINE,
+          mode: focusMode,
+          startedAt: startTimestampRef.current,
+          elapsedSeconds: timer.elapsedSeconds,
+          targetDurationSeconds,
+          updatedAt: Date.now()
+        };
+        try {
+          localStorage.setItem('sapling_active_session_recovery', JSON.stringify(recoveryData));
+        } catch {}
+      }
+    };
+
+    window.addEventListener('beforeunload', saveInProgressState);
+    document.addEventListener('visibilitychange', saveInProgressState);
+
+    return () => {
+      window.removeEventListener('beforeunload', saveInProgressState);
+      document.removeEventListener('visibilitychange', saveInProgressState);
+    };
+  }, [timer.isRunning, timer.elapsedSeconds, sessionState, goal, focusMode, targetDurationSeconds]);
 
   // Frame animation loop for break nature creatures
   useEffect(() => {
@@ -287,6 +330,12 @@ const FocusSession: React.FC<Props> = ({
   });
 
   const handleFinishSession = (isComplete: boolean) => {
+    if (isFinishingRef.current) return;
+    isFinishingRef.current = true;
+    try {
+      localStorage.removeItem('sapling_active_session_recovery');
+    } catch {}
+
     soundEngine.stop();
     const totalMinutesSpent = sessionState === 'active'
       ? Math.floor(timer.elapsedSeconds / 60)
@@ -307,6 +356,12 @@ const FocusSession: React.FC<Props> = ({
   };
 
   const handleAutoSaveExit = () => {
+    if (isFinishingRef.current) return;
+    isFinishingRef.current = true;
+    try {
+      localStorage.removeItem('sapling_active_session_recovery');
+    } catch {}
+
     soundEngine.stop();
     const elapsedMinutes = Math.floor(timer.elapsedSeconds / 60);
     if (elapsedMinutes > 0) {
@@ -488,7 +543,7 @@ const FocusSession: React.FC<Props> = ({
             <div className="pixel-font text-[6px] text-green-500 uppercase tracking-widest font-bold">
               {isChronos ? 'TARGET' : 'MODE'}
             </div>
-            <div className="pixel-font text-[10px] sm:text-xs text-green-300 font-bold">
+            <div className="pixel-font text-[10px] sm:text-xs text-green-300 font-bold tabular-nums">
               {isChronos ? formatTime(targetDurationSeconds) : 'GROOVE'}
             </div>
           </div>
@@ -544,7 +599,7 @@ const FocusSession: React.FC<Props> = ({
               </svg>
               {/* Centered Timer HUD */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <h2 className="pixel-font text-3xl xs:text-4xl sm:text-5xl text-white select-none tracking-tighter leading-none shadow-md">
+                <h2 className="pixel-font text-3xl xs:text-4xl sm:text-5xl text-white select-none tracking-tighter leading-none shadow-md tabular-nums">
                   {formatTime(displayTimerSeconds)}
                 </h2>
                 <span className="pixel-font text-[7px] sm:text-[8px] text-green-400 uppercase mt-2.5 sm:mt-3 tracking-wider font-bold">
@@ -557,7 +612,7 @@ const FocusSession: React.FC<Props> = ({
               {/* Top HUD Badge for Timer */}
               <div className="z-20 px-3 py-1 bg-[#050c05]/95 border border-green-800/70 pixel-corners shadow-md flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${isTimerRunning ? 'bg-green-400 animate-pulse' : 'bg-zinc-600'}`} />
-                <span className="pixel-font text-base sm:text-lg text-white tracking-tight">
+                <span className="pixel-font text-base sm:text-lg text-white tracking-tight tabular-nums">
                   {formatTime(displayTimerSeconds)}
                 </span>
               </div>
@@ -606,7 +661,7 @@ const FocusSession: React.FC<Props> = ({
               e.preventDefault();
               setShowSettings(true);
             }}
-            className={`w-10 h-10 xs:w-11 xs:h-11 sm:w-12 sm:h-12 border-2 transition-all bg-[#0a160a] pixel-corners flex items-center justify-center shrink-0 shadow-md ${
+            className={`w-11 h-11 sm:w-12 sm:h-12 min-w-[44px] min-h-[44px] border-2 transition-all bg-[#0a160a] pixel-corners flex items-center justify-center shrink-0 shadow-md ${
               isMusicEnabled && selectedMusic.id !== 'none'
                 ? 'border-green-400 text-green-300 bg-green-950/40 shadow-[0_0_15px_rgba(34,197,94,0.2)]'
                 : 'border-green-900/60 text-green-600 hover:border-green-700'
@@ -626,7 +681,7 @@ const FocusSession: React.FC<Props> = ({
           {/* Sound Settings Gear Button */}
           <button
             onClick={() => setShowSettings(true)}
-            className="w-8 h-10 xs:w-9 xs:h-11 sm:w-10 sm:h-12 border-2 border-green-900/50 bg-[#061206] text-green-400 hover:border-green-600 hover:text-green-200 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md text-xs pixel-font"
+            className="w-11 h-11 sm:w-11 sm:h-12 min-w-[44px] min-h-[44px] border-2 border-green-900/50 bg-[#061206] text-green-400 hover:border-green-600 hover:text-green-200 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md text-xs pixel-font"
             aria-label="Select ambient soundscape"
             title="Select soundscape"
           >
@@ -644,7 +699,7 @@ const FocusSession: React.FC<Props> = ({
                   breakTimer.resume();
                 }
               }}
-              className="flex-1 py-2.5 xs:py-3 sm:py-3.5 text-[9px] xs:text-[10px] sm:text-[11px] tracking-[0.15em] xs:tracking-[0.25em] h-10 xs:h-11 sm:h-12 shadow-lg"
+              className="flex-1 py-2.5 xs:py-3 sm:py-3.5 text-[9px] xs:text-[10px] sm:text-[11px] tracking-[0.15em] xs:tracking-[0.25em] h-11 sm:h-12 min-h-[44px] shadow-lg"
             >
               {breakTimer.isRunning ? 'PAUSE REST' : 'RESUME REST'}
             </PixelButton>
@@ -663,9 +718,9 @@ const FocusSession: React.FC<Props> = ({
                   }
                 }
               }}
-              className="flex-1 py-2.5 xs:py-3 sm:py-3.5 text-[9px] xs:text-[10px] sm:text-[11px] tracking-[0.15em] xs:tracking-[0.25em] h-10 xs:h-11 sm:h-12 shadow-lg"
+              className="flex-1 py-2.5 xs:py-3 sm:py-3.5 text-[9px] xs:text-[10px] sm:text-[11px] tracking-[0.15em] xs:tracking-[0.25em] h-11 sm:h-12 min-h-[44px] shadow-lg"
             >
-              {timer.isRunning ? 'HALT' : 'COMMENCE'}
+              {timer.isRunning ? 'HALT' : 'RESUME'}
             </PixelButton>
           ) : (
             <div className="flex-1 flex gap-1.5 xs:gap-2">
@@ -683,14 +738,14 @@ const FocusSession: React.FC<Props> = ({
                     }
                   }
                 }}
-                className="flex-1 py-2.5 xs:py-3 text-[8.5px] xs:text-[9px] sm:text-[10px] tracking-[0.15em] xs:tracking-[0.2em] h-10 xs:h-11 sm:h-12 shadow-lg"
+                className="flex-1 py-2.5 xs:py-3 text-[8.5px] xs:text-[9px] sm:text-[10px] tracking-[0.15em] xs:tracking-[0.2em] h-11 sm:h-12 min-h-[44px] shadow-lg"
               >
-                {timer.isRunning ? 'PAUSE' : 'GROW'}
+                {timer.isRunning ? 'PAUSE' : 'RESUME'}
               </PixelButton>
               <PixelButton
                 variant="success"
                 onClick={handleGrooveEndRitual}
-                className="flex-1 py-2.5 xs:py-3 text-[8.5px] xs:text-[9px] sm:text-[10px] tracking-[0.15em] xs:tracking-[0.2em] h-10 xs:h-11 sm:h-12 shadow-lg whitespace-nowrap"
+                className="flex-1 py-2.5 xs:py-3 text-[8.5px] xs:text-[9px] sm:text-[10px] tracking-[0.15em] xs:tracking-[0.2em] h-11 sm:h-12 min-h-[44px] shadow-lg whitespace-nowrap"
               >
                 HARVEST
               </PixelButton>
@@ -700,7 +755,7 @@ const FocusSession: React.FC<Props> = ({
           {/* Exit Button */}
           <button
             onClick={handleAutoSaveExit}
-            className="w-10 h-10 xs:w-11 xs:h-11 sm:w-12 sm:h-12 border-2 border-green-950 bg-[#0a160a] text-green-500 hover:text-red-400 hover:border-red-900/60 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md"
+            className="w-11 h-11 sm:w-12 sm:h-12 min-w-[44px] min-h-[44px] border-2 border-green-950 bg-[#0a160a] text-green-500 hover:text-red-400 hover:border-red-900/60 transition-all pixel-corners flex items-center justify-center shrink-0 shadow-md"
             aria-label="Exit Session"
           >
             <svg width="18" height="18" className="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

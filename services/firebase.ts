@@ -7,6 +7,7 @@ import {
   browserLocalPersistence,
   setPersistence
 } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -38,11 +39,13 @@ export const isFirebaseConfigured = (): boolean => {
 
 let appInstance: FirebaseApp | null = null;
 let authInstance: Auth | null = null;
+let dbInstance: Firestore | null = null;
 
 if (isFirebaseConfigured()) {
   try {
     appInstance = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     authInstance = getAuth(appInstance);
+    dbInstance = getFirestore(appInstance);
     // Ensure persistence is set to localStorage
     setPersistence(authInstance, browserLocalPersistence).catch(() => {});
   } catch (err) {
@@ -52,6 +55,7 @@ if (isFirebaseConfigured()) {
 
 export const app = appInstance;
 export const auth = authInstance;
+export const db = dbInstance;
 
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });

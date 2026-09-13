@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TimelineType, TreeType, SaplingGoal } from '../types';
 import { TREE_CONFIGS } from '../constants';
 import PixelButton from './PixelButton';
@@ -66,15 +66,21 @@ const TreeIcon: React.FC<{ type: TreeType; active: boolean }> = ({ type, active 
   );
 };
 
-const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; label: string }> = ({ value, onChange, label }) => (
+const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; label: string; min?: number; max?: number }> = ({ 
+  value, 
+  onChange, 
+  label, 
+  min = 1, 
+  max = 999 
+}) => (
   <div className="flex bg-[#0a0a0a] border-2 border-green-950 items-center overflow-hidden h-12">
     <div className="flex-1 text-center py-2">
-      <span className="pixel-font text-base text-zinc-100">{value}</span>
+      <span className="pixel-font text-base text-zinc-100 tabular-nums">{value}</span>
     </div>
     <div className="flex flex-col border-l-2 border-green-950 h-full w-10 shrink-0">
       <button 
         type="button"
-        onClick={() => onChange(value + 1)} 
+        onClick={() => onChange(Math.min(max, value + 1))} 
         className="flex-1 flex items-center justify-center hover:bg-green-950/40 text-green-500 hover:text-green-300 transition-colors"
         aria-label={`Increase ${label}`}
       >
@@ -82,7 +88,7 @@ const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; labe
       </button>
       <button 
         type="button"
-        onClick={() => onChange(Math.max(1, value - 1))} 
+        onClick={() => onChange(Math.max(min, value - 1))} 
         className="flex-1 flex items-center justify-center border-t-2 border-green-950 hover:bg-green-950/40 text-green-500 hover:text-green-300 transition-colors"
         aria-label={`Decrease ${label}`}
       >
@@ -99,6 +105,17 @@ const GoalModal: React.FC<Props> = ({ onClose, onSubmit }) => {
   const [durationValue, setDurationValue] = useState(1); 
   const [focusValue, setFocusValue] = useState(25);
   const [focusUnit, setFocusUnit] = useState<'hrs' | 'mins'>('mins');
+
+  // Handle escape key to dismiss modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const calculateTotalMinutes = () => {
     let days = durationValue;
@@ -134,21 +151,26 @@ const GoalModal: React.FC<Props> = ({ onClose, onSubmit }) => {
   };
 
   const handleCreate = () => {
-    if (!name.trim()) return;
-    let days = durationValue;
-    if (timeline === TimelineType.WEEK) days = durationValue * 7;
-    if (timeline === TimelineType.MONTH) days = durationValue * 30;
-    if (timeline === TimelineType.YEAR) days = durationValue * 365;
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
 
-    const dailyTarget = focusUnit === 'hrs' ? focusValue * 60 : focusValue;
+    const clampedDuration = Math.max(1, Math.min(durationValue, 365));
+    let days = clampedDuration;
+    if (timeline === TimelineType.WEEK) days = clampedDuration * 7;
+    if (timeline === TimelineType.MONTH) days = clampedDuration * 30;
+    if (timeline === TimelineType.YEAR) days = clampedDuration * 365;
+
+    const rawDaily = focusUnit === 'hrs' ? focusValue * 60 : focusValue;
+    const dailyTarget = Math.max(1, Math.min(rawDaily, 1440));
+    const totalTarget = Math.max(1, dailyTarget * days);
 
     onSubmit({
-      name,
+      name: trimmedName.slice(0, 80),
       type,
       timeline,
       durationInDays: days,
       dailyTargetMinutes: dailyTarget,
-      totalTargetMinutes: calculateTotalMinutes(),
+      totalTargetMinutes: totalTarget,
       accruedMinutes: 0,
       startDate: Date.now(),
       isComplete: false,
@@ -158,14 +180,19 @@ const GoalModal: React.FC<Props> = ({ onClose, onSubmit }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-2 sm:p-4 z-[150] animate-in fade-in duration-200 backdrop-blur-sm pb-safe pt-safe">
+    <div 
+      className="fixed inset-0 bg-black/90 flex items-center justify-center p-2 sm:p-4 z-[150] animate-in fade-in duration-200 backdrop-blur-sm pb-safe pt-safe"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="plant-seed-title"
+    >
       <div className="bg-[#0f140f] w-full max-w-md max-h-[92vh] border-2 border-green-950/60 flex flex-col relative shadow-[0_0_50px_rgba(0,0,0,0.9)] overflow-hidden">
         
         {/* Header */}
         <header className="px-4 sm:px-5 py-3.5 border-b-2 border-green-950/40 flex justify-between items-center bg-[#070e07] shrink-0">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 inline-block" />
-            <h2 className="pixel-font text-xs sm:text-sm text-zinc-100 uppercase tracking-wider">PLANT NEW SEED</h2>
+            <h2 id="plant-seed-title" className="pixel-font text-xs sm:text-sm text-zinc-100 uppercase tracking-wider">PLANT NEW SEED</h2>
           </div>
           <button 
             onClick={onClose} 
@@ -190,7 +217,7 @@ const GoalModal: React.FC<Props> = ({ onClose, onSubmit }) => {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="My Intent or Goal..."
                 className="w-full bg-transparent outline-none pixel-font text-[9px] sm:text-[10px] text-zinc-200 placeholder:text-zinc-700"
-                maxLength={40}
+                maxLength={80}
               />
             </div>
           </section>

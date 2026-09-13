@@ -82,6 +82,72 @@ PRODUCTIVITY DIAGNOSTICS:
 When the user asks about their habits, focus velocity, or progress, analyze their real Grove context: reference their active goals, wilting/neglected seeds, completed canopy count, and recent session logs directly.
 `;
 
+// In-memory sliding-window rate limiter.
+// NOTE: Best-effort in-memory protection for current scale.
+// Because Vercel/serverless execution may spawn multiple ephemeral instances,
+// this is not a globally authoritative distributed rate limit, but guards against burst abuse.
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const RATE_LIMIT_MAX_REQUESTS = 25; // 25 requests per window per IP
+const ipRequestHistory = new Map<string, number[]>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const timestamps = ipRequestHistory.get(ip) || [];
+  
+  // Filter out timestamps older than the sliding window
+  const validTimestamps = timestamps.filter(ts => now - ts < RATE_LIMIT_WINDOW_MS);
+  
+  if (validTimestamps.length >= RATE_LIMIT_MAX_REQUESTS) {
+    ipRequestHistory.set(ip, validTimestamps);
+    return false;
+  }
+  
+  validTimestamps.push(now);
+  ipRequestHistory.set(ip, validTimestamps);
+  return true;
+}
+
+function getClientIp(req: any): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.headers['x-real-ip'] || req.socket?.remoteAddress || '127.0.0.1';
+}
+
+function validateAniPayload(messages: any): { valid: boolean; error?: string } {
+  if (!Array.isArray(messages)) {
+    return { valid: false, error: 'Messages payload must be an array.' };
+  }
+  if (messages.length > 10) {
+    return { valid: false, error: 'Conversation history exceeds maximum of 10 messages.' };
+  }
+
+  for (const msg of messages) {
+    if (!msg || !Array.isArray(msg.parts)) continue;
+    for (const part of msg.parts) {
+      if (typeof part.text === 'string' && part.text.length > 2500) {
+        return { valid: false, error: 'Message text exceeds maximum length of 2,500 characters.' };
+      }
+      if (part.inlineData) {
+        const { mimeType, data } = part.inlineData;
+        const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+        if (!allowedMimes.includes(mimeType)) {
+          return { valid: false, error: `Unsupported image format: ${mimeType}. Allowed formats: JPEG, PNG, WEBP, HEIC.` };
+        }
+        if (typeof data === 'string') {
+          const approximateBytes = data.length * 0.75;
+          if (approximateBytes > 4 * 1024 * 1024) {
+            return { valid: false, error: 'Attached image exceeds maximum size of 4MB.' };
+          }
+        }
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
 export default async function handler(req: any, res: any) {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -101,7 +167,17 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  console.log("[ANI API] Route reached via POST.");
+  // Check rate limit
+  const clientIp = getClientIp(req);
+  if (!checkRateLimit(clientIp)) {
+    console.warn(`[ANI API] Rate limit exceeded for IP: ${clientIp}`);
+    return res.status(429).json({
+      error: 'The canopy is resting. Ani is processing too many seasonal winds. Please wait a few moments before breathing with Ani again.',
+      status: 'rate_limited'
+    });
+  }
+
+  console.log(`[ANI API] Route reached via POST from ${clientIp}.`);
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
   console.log(`[ANI API] API key configured: ${apiKey ? 'YES' : 'NO'}`);
@@ -109,13 +185,24 @@ export default async function handler(req: any, res: any) {
   if (!apiKey) {
     console.error("[ANI API] CRITICAL ERROR: GEMINI_API_KEY environment variable is missing.");
     return res.status(503).json({
-      error: 'The required environment variable is missing: GEMINI_API_KEY',
+      error: 'Grove intelligence is resting (API key unconfigured).',
       status: 'unconfigured'
     });
   }
 
   try {
     const { messages = [], context = {} } = req.body || {};
+    
+    // Validate payload size and shape
+    const validation = validateAniPayload(messages);
+    if (!validation.valid) {
+      console.warn(`[ANI API] Payload validation failed: ${validation.error}`);
+      return res.status(400).json({
+        error: validation.error,
+        status: 'invalid_payload'
+      });
+    }
+
     console.log(`[ANI API] Request parsed successfully. Processing ${messages.length} messages.`);
     // Format context summary
     let contextString = "\n\nCURRENT USER GROVE CONTEXT:\n";
@@ -249,12 +336,24 @@ export default async function handler(req: any, res: any) {
       model: 'gemini-2.5-flash'
     });
   } catch (error: any) {
-    console.error(`[ANI API] Provider error status/message:`, error.message);
+    console.error(`[ANI API] Provider error:`, error?.message || error);
     
-    // Attempt to return appropriate status codes
-    const status = error.status || (error.message.includes('key') ? 401 : 500);
-    return res.status(status).json({
-      error: error.message || 'Internal AI service error',
+    const msg = String(error?.message || '');
+    if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('rate limit')) {
+      return res.status(429).json({
+        error: 'The canopy is resting. Ani is processing too many seasonal winds. Please wait a few moments before breathing with Ani again.',
+        status: 'rate_limited'
+      });
+    }
+    if (msg.includes('401') || msg.toLowerCase().includes('key') || msg.toLowerCase().includes('auth')) {
+      return res.status(401).json({
+        error: 'Grove intelligence is resting (Authentication or API configuration issue).',
+        status: 'unauthorized'
+      });
+    }
+
+    return res.status(500).json({
+      error: 'Ani encountered an unexpected stillness in the grove. Please try again shortly.',
       status: 'error'
     });
   }

@@ -25,11 +25,23 @@ const SaplingLogo: React.FC = () => (
   </div>
 );
 
+const parseTabFromHash = (rawHash: string): AppTab | null => {
+  if (!rawHash) return null;
+  const clean = rawHash.replace(/^#\/?/, '').toLowerCase().trim();
+  const parts = clean.split('?')[0].split('/');
+  const target = parts[0] === 'app' ? parts[1] : parts[0];
+  if (target === 'pomo' || target === 'tasks' || target === 'timer') return 'tasks';
+  if (target === 'logs' || target === 'history') return 'logs';
+  if (target === 'ani' || target === 'chat' || target === 'assistant') return 'ani';
+  if (target === 'grove' || target === 'trees') return 'grove';
+  return null;
+};
+
 const parseViewMode = (rawHash: string): AppViewMode => {
   if (!rawHash) return 'landing';
   const clean = rawHash.replace(/^#\/?/, '').toLowerCase().trim();
   const segment = clean.split('?')[0].split('/')[0];
-  if (segment === 'app' || segment === 'grove') {
+  if (['app', 'grove', 'pomo', 'tasks', 'logs', 'ani'].includes(segment)) {
     return 'app';
   }
   return 'landing';
@@ -47,17 +59,50 @@ const SaplingAppContent: React.FC = () => {
   });
 
   const [profile, setProfile] = useState<UserProfile>(() => storageService.getProfile());
-  const [activeTab, setActiveTab] = useState<AppTab>('grove');
+  const [activeTab, setActiveTab] = useState<AppTab>(() => {
+    if (typeof window !== 'undefined') {
+      const fromHash = parseTabFromHash(window.location.hash);
+      if (fromHash) return fromHash;
+      try {
+        const stored = localStorage.getItem('sapling_last_tab') as AppTab | null;
+        if (stored && ['grove', 'tasks', 'logs', 'ani'].includes(stored)) {
+          return stored;
+        }
+      } catch {}
+    }
+    return 'grove';
+  });
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showSanctuaryModal, setShowSanctuaryModal] = useState(false);
   const [activeSessionGoal, setActiveSessionGoal] = useState<SaplingGoal | null | 'pomodoro'>(null);
   const [sessionMode, setSessionMode] = useState<FocusMode>('chronos');
+  const [sessionDurationMinutes, setSessionDurationMinutes] = useState<number | undefined>(undefined);
   const [pomoVisualMode, setPomoVisualMode] = useState<PomoVisualMode>('clock');
   const [utilityMode, setUtilityMode] = useState<FocusMode>('chronos');
   const [harvestNotice, setHarvestNotice] = useState<string | null>(null);
+  const [recoveredSession, setRecoveredSession] = useState<{
+    goalId?: string;
+    goalName: string;
+    mode: FocusMode;
+    elapsedSeconds: number;
+    targetDurationSeconds?: number;
+  } | null>(null);
   const [selectedGroveGoalId, setSelectedGroveGoalId] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState<boolean>(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
   const navRef = useRef<HTMLElement>(null);
   const [navHeight, setNavHeight] = useState<number>(0);
+
+  // Monitor network connectivity for offline tolerance
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Dynamically measure fixed bottom navigation to guarantee pixel-exact clearance across all mobile and desktop viewports
   useEffect(() => {
@@ -92,16 +137,61 @@ const SaplingAppContent: React.FC = () => {
     perfectionScore: 1.0
   }), []);
 
-  // Sync profile changes to storage
+  // Sync profile changes to storage (local-first, with background async cloud sync if authenticated)
   useEffect(() => {
     storageService.saveProfile(profile);
   }, [profile]);
+
+  // When user logs in to a verified Google/Email account, pull and merge Firestore profile
+  useEffect(() => {
+    if (user && !user.isAnonymous) {
+      storageService.loadProfileFromFirestore(user.id).then(cloudProfile => {
+        setProfile(cloudProfile);
+      }).catch(err => {
+        console.warn("[App] Cloud sync fallback to local storage:", err?.message);
+      });
+    }
+  }, [user?.id, user?.isAnonymous]);
+
+  // Check for in-progress session snapshot on boot (does NOT auto-complete session)
+  useEffect(() => {
+    try {
+      const savedRecovery = localStorage.getItem('sapling_active_session_recovery');
+      if (savedRecovery) {
+        const parsed = JSON.parse(savedRecovery);
+        if (parsed && Date.now() - (parsed.updatedAt || 0) < 12 * 60 * 60 * 1000 && parsed.elapsedSeconds > 10) {
+          setRecoveredSession(parsed);
+        } else {
+          localStorage.removeItem('sapling_active_session_recovery');
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Stable Tab Switching Handler: updates state, caches in localStorage, and syncs URL hash
+  const handleTabChange = useCallback((newTab: AppTab) => {
+    setActiveTab(newTab);
+    try {
+      localStorage.setItem('sapling_last_tab', newTab);
+    } catch {}
+    const tabSlug = newTab === 'tasks' ? 'pomo' : newTab;
+    const targetHash = newTab === 'grove' ? '#/app' : `#/app/${tabSlug}`;
+    if (window.location.hash !== targetHash) {
+      window.location.hash = targetHash;
+    }
+  }, []);
 
   // Handle URL hash and browser history navigation (Back / Forward / direct links)
   useEffect(() => {
     const handleNavigation = () => {
       const targetView = parseViewMode(window.location.hash);
       setViewMode(targetView);
+      if (targetView === 'app') {
+        const tabFromHash = parseTabFromHash(window.location.hash);
+        if (tabFromHash) {
+          setActiveTab(tabFromHash);
+        }
+      }
     };
     window.addEventListener('hashchange', handleNavigation);
     window.addEventListener('popstate', handleNavigation);
@@ -111,16 +201,18 @@ const SaplingAppContent: React.FC = () => {
     };
   }, []);
 
-  const navigateToApp = useCallback((options?: { openNewSeed?: boolean; presetTree?: TreeType; presetName?: string }) => {
+  const navigateToApp = useCallback((options?: { openNewSeed?: boolean; presetTree?: TreeType; presetName?: string; tab?: AppTab }) => {
     setViewMode('app');
-    const targetHash = '#/app';
+    const targetTab = options?.tab || activeTab || 'grove';
+    const tabSlug = targetTab === 'tasks' ? 'pomo' : targetTab;
+    const targetHash = targetTab === 'grove' ? '#/app' : `#/app/${tabSlug}`;
     if (window.location.hash !== targetHash && window.location.hash !== '#app') {
       window.location.hash = targetHash;
     }
     if (options?.openNewSeed) {
       setShowGoalModal(true);
     }
-  }, []);
+  }, [activeTab]);
 
   const navigateToLanding = useCallback(() => {
     setViewMode('landing');
@@ -138,6 +230,17 @@ const SaplingAppContent: React.FC = () => {
 
   const handleFocusFinish = (minutes: number, isComplete: boolean, log: FocusSessionLog) => {
     setProfile(prev => {
+      // Strict idempotency guard: prevent duplicate recording if log with same ID or timestamp already exists
+      const isDuplicate = prev.logs.some(
+        existing => existing.id === log.id ||
+        (Math.abs(existing.startedAt - log.startedAt) < 2000 && existing.goalName === log.goalName)
+      );
+
+      if (isDuplicate) {
+        console.warn("[App] Duplicate session finish blocked:", log.id);
+        return prev;
+      }
+
       let updatedGrove = prev.grove;
       let harvestedName: string | null = null;
 
@@ -179,15 +282,20 @@ const SaplingAppContent: React.FC = () => {
     });
 
     setActiveSessionGoal(null);
+    setSessionDurationMinutes(undefined);
   };
 
-  const startGoalRitual = (goal: SaplingGoal, mode: FocusMode = 'chronos') => {
+  const startGoalRitual = (goal: SaplingGoal, mode: FocusMode = 'chronos', durationMinutes?: number) => {
     setSessionMode(mode);
+    const validMinutes = typeof durationMinutes === 'number' && !isNaN(durationMinutes) && durationMinutes > 0 ? durationMinutes : undefined;
+    setSessionDurationMinutes(validMinutes);
     setActiveSessionGoal(goal);
   };
 
-  const startUtilityRitual = () => {
+  const startUtilityRitual = (durationMinutes?: number) => {
     setSessionMode(utilityMode);
+    const validMinutes = typeof durationMinutes === 'number' && !isNaN(durationMinutes) && durationMinutes > 0 ? durationMinutes : (utilityMode === 'chronos' ? 25 : undefined);
+    setSessionDurationMinutes(validMinutes);
     setActiveSessionGoal('pomodoro');
   };
 
@@ -246,6 +354,62 @@ const SaplingAppContent: React.FC = () => {
             </button>
           </div>
 
+          {!isOnline && (
+            <div className="bg-[#051105] border border-green-800/60 p-2 sm:p-2.5 flex items-center justify-between text-green-400 pixel-font text-[7px] sm:text-[7.5px] uppercase tracking-wider shrink-0 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                <span>Offline Canopy Mode • Local soil active & protected</span>
+              </div>
+              <span className="text-zinc-500 font-mono text-[9px]">(Offline)</span>
+            </div>
+          )}
+
+          {recoveredSession && (
+            <div className="bg-[#061406] border-2 border-amber-600/70 p-2.5 sm:p-3 flex items-center justify-between shadow-[0_0_20px_rgba(245,158,11,0.2)] animate-in fade-in shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2 h-2 bg-amber-400 animate-pulse shrink-0" />
+                <div className="text-left min-w-0">
+                  <span className="pixel-font text-[8px] sm:text-[8.5px] text-amber-300 uppercase tracking-wider block font-bold truncate">
+                    IN-PROGRESS RITUAL: "{recoveredSession.goalName}"
+                  </span>
+                  <span className="text-[9px] text-amber-400/90 font-mono">
+                    {Math.floor(recoveredSession.elapsedSeconds / 60)} minutes preserved from previous session.
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <button 
+                  onClick={() => {
+                    const matched = profile.grove.find(g => g.id === recoveredSession.goalId);
+                    const rec = recoveredSession;
+                    const durationMins = rec.targetDurationSeconds ? Math.round(rec.targetDurationSeconds / 60) : undefined;
+                    setRecoveredSession(null);
+                    localStorage.removeItem('sapling_active_session_recovery');
+                    if (matched) {
+                      startGoalRitual(matched, rec.mode, durationMins);
+                    } else {
+                      setUtilityMode(rec.mode);
+                      startUtilityRitual(durationMins);
+                    }
+                  }}
+                  className="pixel-font text-[7px] sm:text-[7.5px] text-amber-200 hover:text-white border border-amber-500/80 bg-[#140e04] px-2.5 py-1 uppercase tracking-widest transition-colors font-bold shadow-sm"
+                >
+                  RESUME →
+                </button>
+                <button 
+                  onClick={() => {
+                    setRecoveredSession(null);
+                    localStorage.removeItem('sapling_active_session_recovery');
+                  }}
+                  className="text-amber-500 hover:text-amber-200 px-1 text-base leading-none font-bold"
+                  aria-label="Dismiss recovery"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
+
           {harvestNotice && (
             <div className="bg-green-950/70 border-2 border-green-500/50 p-2.5 sm:p-3 flex items-center justify-between shadow-[0_0_20px_rgba(34,197,94,0.2)] animate-in fade-in shrink-0">
               <div className="flex items-center gap-2">
@@ -261,7 +425,7 @@ const SaplingAppContent: React.FC = () => {
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <button 
-                  onClick={() => { setActiveTab('logs'); setHarvestNotice(null); }}
+                  onClick={() => { handleTabChange('logs'); setHarvestNotice(null); }}
                   className="pixel-font text-[7px] sm:text-[7.5px] text-green-300 hover:text-white border border-green-700/60 bg-[#061406] px-2 py-1 uppercase tracking-widest transition-colors font-bold"
                 >
                   LOGS →
@@ -409,7 +573,7 @@ const SaplingAppContent: React.FC = () => {
                 </h3>
               </div>
               <button 
-                onClick={() => setActiveTab('logs')}
+                onClick={() => handleTabChange('logs')}
                 className="pixel-font text-[6.5px] sm:text-[7px] text-green-500 hover:text-green-300 uppercase tracking-wider transition-colors"
               >
                 VIEW ARCHIVES →
@@ -539,7 +703,7 @@ const SaplingAppContent: React.FC = () => {
 
         <div className="pt-2 pb-1 w-full">
           <PixelButton 
-            onClick={startUtilityRitual} 
+            onClick={() => startUtilityRitual(utilityMode === 'chronos' ? 25 : undefined)} 
             variant="success"
             className="w-full py-3 sm:py-4 text-[9px] xs:text-[10px] sm:text-xs border-2 tracking-[0.2em] sm:tracking-[0.4em] uppercase shadow-[0_10px_40px_rgba(34,197,94,0.2)] h-11 sm:h-12"
           >
@@ -702,12 +866,12 @@ const SaplingAppContent: React.FC = () => {
               profile={profile} 
               activeSessionGoal={activeSessionGoal} 
               onPlantGoal={addGoal}
-              onStartRitual={(goal, mode) => {
+              onStartRitual={(goal, mode, duration) => {
                 if (goal === 'pomodoro') {
                   setUtilityMode(mode);
-                  startUtilityRitual();
+                  startUtilityRitual(duration);
                 } else {
-                  startGoalRitual(goal, mode);
+                  startGoalRitual(goal, mode, duration);
                 }
               }}
               onSelectSoundscape={(trackId) => {
@@ -720,7 +884,7 @@ const SaplingAppContent: React.FC = () => {
                   }
                 }));
               }}
-              onNavigateTab={(tab) => setActiveTab(tab)}
+              onNavigateTab={(tab) => handleTabChange(tab)}
             />
           </Suspense>
         )}
@@ -743,9 +907,9 @@ const SaplingAppContent: React.FC = () => {
             <button 
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id as AppTab)}
+              onClick={() => handleTabChange(tab.id as AppTab)}
               aria-current={isActive ? 'page' : undefined}
-              className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-1 sm:py-2 transition-all duration-200 min-h-[44px] group"
+              className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-1 sm:py-2 transition-all duration-200 min-h-[44px] group cursor-pointer select-none active:scale-[0.97]"
             >
               <div className={`w-8 h-8 xs:w-9 xs:h-9 sm:w-11 sm:h-11 flex items-center justify-center border-2 transition-all ${
                 isActive 
@@ -785,8 +949,12 @@ const SaplingAppContent: React.FC = () => {
             goal={activeSessionGoal === 'pomodoro' ? null : activeSessionGoal}
             mode={sessionMode}
             visualMode={activeSessionGoal === 'pomodoro' ? pomoVisualMode : 'tree'}
+            durationMinutes={sessionDurationMinutes}
             onFinish={handleFocusFinish}
-            onCancel={() => setActiveSessionGoal(null)}
+            onCancel={() => {
+              setActiveSessionGoal(null);
+              setSessionDurationMinutes(undefined);
+            }}
           />
         )}
       </Suspense>

@@ -3,6 +3,48 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
+// In-memory sliding-window rate limiter for dev server
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 25;
+const devIpRequestHistory = new Map<string, number[]>();
+
+function checkDevRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const timestamps = devIpRequestHistory.get(ip) || [];
+  const validTimestamps = timestamps.filter(ts => now - ts < RATE_LIMIT_WINDOW_MS);
+  if (validTimestamps.length >= RATE_LIMIT_MAX_REQUESTS) {
+    devIpRequestHistory.set(ip, validTimestamps);
+    return false;
+  }
+  validTimestamps.push(now);
+  devIpRequestHistory.set(ip, validTimestamps);
+  return true;
+}
+
+function validateDevPayload(messages: any): { valid: boolean; error?: string } {
+  if (!Array.isArray(messages)) return { valid: false, error: 'Messages payload must be an array.' };
+  if (messages.length > 10) return { valid: false, error: 'Conversation history exceeds maximum of 10 messages.' };
+  for (const msg of messages) {
+    if (!msg || !Array.isArray(msg.parts)) continue;
+    for (const part of msg.parts) {
+      if (typeof part.text === 'string' && part.text.length > 2500) {
+        return { valid: false, error: 'Message text exceeds maximum length of 2,500 characters.' };
+      }
+      if (part.inlineData) {
+        const { mimeType, data } = part.inlineData;
+        const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+        if (!allowedMimes.includes(mimeType)) {
+          return { valid: false, error: `Unsupported image format: ${mimeType}.` };
+        }
+        if (typeof data === 'string' && data.length * 0.75 > 4 * 1024 * 1024) {
+          return { valid: false, error: 'Attached image exceeds maximum size of 4MB.' };
+        }
+      }
+    }
+  }
+  return { valid: true };
+}
+
 function aniDevApiPlugin(apiKey?: string) {
   return {
     name: 'ani-dev-api',
@@ -24,8 +66,22 @@ function aniDevApiPlugin(apiKey?: string) {
           return;
         }
 
+        const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '127.0.0.1';
+        if (!checkDevRateLimit(clientIp)) {
+          console.warn(`[ANI API DEV] Rate limit exceeded for IP: ${clientIp}`);
+          res.writeHead(429, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(JSON.stringify({
+            error: 'The canopy is resting. Ani is processing too many seasonal winds. Please wait a few moments before breathing with Ani again.',
+            status: 'rate_limited'
+          }));
+          return;
+        }
+
         const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY;
-        console.log(`[ANI API DEV] Route reached via POST.`);
+        console.log(`[ANI API DEV] Route reached via POST from ${clientIp}.`);
         console.log(`[ANI API DEV] API key configured: ${key ? 'YES' : 'NO'}`);
 
         if (!key) {
@@ -35,7 +91,7 @@ function aniDevApiPlugin(apiKey?: string) {
             'Access-Control-Allow-Origin': '*'
           });
           res.end(JSON.stringify({
-            error: 'The required environment variable is missing: GEMINI_API_KEY',
+            error: 'Grove intelligence is resting (API key unconfigured).',
             status: 'unconfigured'
           }));
           return;
@@ -46,6 +102,17 @@ function aniDevApiPlugin(apiKey?: string) {
         req.on('end', async () => {
           try {
             const { messages = [], context = {} } = JSON.parse(body || '{}');
+            const validation = validateDevPayload(messages);
+            if (!validation.valid) {
+              console.warn(`[ANI API DEV] Payload validation failed: ${validation.error}`);
+              res.writeHead(400, {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+              });
+              res.end(JSON.stringify({ error: validation.error, status: 'invalid_payload' }));
+              return;
+            }
+
             console.log(`[ANI API DEV] Request parsed successfully. Processing ${messages.length} messages.`);
             
             const { GoogleGenAI } = await import('@google/genai');
@@ -262,13 +329,27 @@ When asked about habits, focus velocity, or progress, analyze their real Grove c
               model: 'gemini-2.5-flash'
             }));
           } catch (e: any) {
-            console.error(`[ANI API DEV] Provider error status/message:`, e.message);
-            const status = e.status || (e.message.includes('key') ? 401 : 500);
+            console.error(`[ANI API DEV] Provider error:`, e?.message || e);
+            const msg = String(e?.message || '');
+            let status = 500;
+            let errorText = 'Ani encountered an unexpected stillness in the grove. Please try again shortly.';
+            let statusText = 'error';
+
+            if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('rate limit')) {
+              status = 429;
+              errorText = 'The canopy is resting. Ani is processing too many seasonal winds. Please wait a few moments before breathing with Ani again.';
+              statusText = 'rate_limited';
+            } else if (msg.includes('401') || msg.toLowerCase().includes('key') || msg.toLowerCase().includes('auth')) {
+              status = 401;
+              errorText = 'Grove intelligence is resting (Authentication or API configuration issue).';
+              statusText = 'unauthorized';
+            }
+
             res.writeHead(status, {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': '*'
             });
-            res.end(JSON.stringify({ error: e.message, status: 'error' }));
+            res.end(JSON.stringify({ error: errorText, status: statusText }));
           }
         });
       });

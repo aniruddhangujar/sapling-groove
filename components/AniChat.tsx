@@ -18,7 +18,7 @@ interface Props {
   profile?: UserProfile;
   activeSessionGoal?: SaplingGoal | null | 'pomodoro';
   onPlantGoal?: (goal: Partial<SaplingGoal>) => void;
-  onStartRitual?: (goal: SaplingGoal | 'pomodoro', mode: FocusMode) => void;
+  onStartRitual?: (goal: SaplingGoal | 'pomodoro', mode: FocusMode, durationMinutes?: number) => void;
   onSelectSoundscape?: (trackId: string) => void;
   onNavigateTab?: (tab: AppTab) => void;
 }
@@ -199,7 +199,8 @@ const AniChat: React.FC<Props> = ({
       const matchedGoal = (profile?.grove || []).find(
         g => !g.isComplete && (!goalName || g.name.toLowerCase().includes(goalName.toLowerCase()))
       );
-      onStartRitual?.(matchedGoal || 'pomodoro', mode);
+      const duration = action.sessionConfig?.durationMinutes;
+      onStartRitual?.(matchedGoal || 'pomodoro', mode, duration);
     } else if (action.type === 'switch_soundscape' && action.soundscapeId) {
       onSelectSoundscape?.(action.soundscapeId);
     } else if (action.type === 'task_breakdown' && action.breakdownTasks) {
