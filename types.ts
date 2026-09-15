@@ -26,6 +26,13 @@ export enum TimelineType {
   YEAR = 'Year'
 }
 
+export enum TreeVitality {
+  THRIVING = 'Thriving',
+  HEALTHY = 'Healthy',
+  WILTING = 'Wilting',
+  SEVERELY_WILTED = 'Severely Wilted'
+}
+
 export interface SaplingGoal {
   id: string;
   name: string;
@@ -40,6 +47,7 @@ export interface SaplingGoal {
   isComplete: boolean;
   health: number;
   perfectionScore: number;
+  vitality?: TreeVitality;
 }
 
 export interface FocusSessionLog {

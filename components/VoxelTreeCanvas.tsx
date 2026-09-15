@@ -103,21 +103,21 @@ const VoxelTreeCanvas: React.FC<Props> = ({
     scene.add(treeGroup);
 
     // --- CINEMATIC DIRECTIONAL & BIOLOGICAL LIGHTING ---
-    const ambientLight = new THREE.AmbientLight(0x0d2812, 2.2);
+    const ambientLight = new THREE.AmbientLight(isWilting ? 0x182018 : 0x0d2812, isWilting ? 1.9 : 2.2);
     scene.add(ambientLight);
 
     // Overhead Key Light (creates crisp voxel facet highlights and cast shadows)
-    const keyLight = new THREE.DirectionalLight(0xdcfce7, 2.8);
+    const keyLight = new THREE.DirectionalLight(isWilting ? 0xfef08a : 0xdcfce7, isWilting ? 2.2 : 2.8);
     keyLight.position.set(-3, 6, 4);
     scene.add(keyLight);
 
-    // Cyber-Organic Cyan Rim Light (defines silhouette edges)
-    const rimLight = new THREE.DirectionalLight(0x2dd4bf, 1.4);
+    // Cyber-Organic Cyan Rim Light (muted slate when wilting, vibrant cyan when healthy)
+    const rimLight = new THREE.DirectionalLight(isWilting ? 0x64748b : 0x2dd4bf, isWilting ? 0.9 : 1.4);
     rimLight.position.set(4, 2, -3);
     scene.add(rimLight);
 
     // Subtle Amber Ground Bounce Light
-    const bounceLight = new THREE.PointLight(0xf59e0b, 0.8, 5);
+    const bounceLight = new THREE.PointLight(0xf59e0b, isWilting ? 0.5 : 0.8, 5);
     bounceLight.position.set(0, -0.8, 1.5);
     scene.add(bounceLight);
 
@@ -271,10 +271,15 @@ const VoxelTreeCanvas: React.FC<Props> = ({
       treeGroup.rotation.y = mouseRef.current.x;
       treeGroup.rotation.x = Math.max(-0.2, Math.min(0.3, mouseRef.current.y));
 
-      // Organic Wind Sway & Biological Breathing
-      const sway = Math.sin(elapsed * 1.1) * 0.02;
+      // Organic Wind Sway & Biological Breathing (slower and heavier if wilted)
+      const swaySpeed = isWilting ? 0.6 : 1.1;
+      const swayAmount = isWilting ? 0.01 : 0.02;
+      const sway = Math.sin(elapsed * swaySpeed) * swayAmount;
       treeGroup.rotation.z = sway;
-      treeGroup.scale.y = 1.0 + Math.sin(elapsed * 0.7) * 0.008;
+      // Subtle downward posture droop when wilted
+      const baseTilt = isWilting ? 0.06 : 0;
+      treeGroup.rotation.x = Math.max(-0.2, Math.min(0.3, mouseRef.current.y)) + baseTilt;
+      treeGroup.scale.y = 1.0 + Math.sin(elapsed * 0.7) * (isWilting ? 0.004 : 0.008);
 
       renderer.render(scene, camera);
     };

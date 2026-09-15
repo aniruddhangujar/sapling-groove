@@ -1,5 +1,6 @@
 import { TreeType, SaplingGoal } from '../types';
 import { TREE_CONFIGS, TreePalette, COLORS } from '../constants';
+import { desaturateToWilted } from './voxelTreeBuilder';
 
 export const GRID_SIZE = 64;
 
@@ -87,6 +88,12 @@ const drawFoliageCluster = (
         if (normDist + edgeNoise > 0.95) continue;
       }
 
+      // When wilting, thin out outer edge pixels for a sparser canopy
+      if (dc.isWilting && normDist > 0.65) {
+        const thin = Math.sin(dx * 7.1 + dy * 11.3 + dc.seed);
+        if (thin > 0.2) continue;
+      }
+
       // Lighting gradient: top-left is highlight, center is mid/light, bottom-right is deep shadow
       const lightBias = -dx / rx - dy / ry; // High when top-left (dx < 0, dy < 0)
 
@@ -99,7 +106,13 @@ const drawFoliageCluster = (
         color = shadowColor;
       }
 
-      setPixel(dc, cx + dx, cy + dy, color);
+      // Species-preserving desaturation and downward droop under neglect
+      if (dc.isWilting) {
+        color = desaturateToWilted(color, 0.55, 0.82);
+      }
+      const droop = dc.isWilting && normDist > 0.45 ? 1 : 0;
+
+      setPixel(dc, cx + dx, cy + dy + droop, color);
     }
   }
 };
@@ -923,7 +936,7 @@ export const renderPixelTree = (
   const pSize = canvasWidth / GRID_SIZE;
   const baseY = GRID_SIZE - 12; // Base ground line at y = 52
   const palette = TREE_CONFIGS[goal.type] || TREE_CONFIGS[TreeType.OAK];
-  const isWilting = goal.health < 35;
+  const isWilting = goal.health < 40;
 
   const dc: DrawContext = {
     ctx,

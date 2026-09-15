@@ -1,4 +1,5 @@
 import { ChatMessage, UserProfile, SaplingGoal, FocusSessionLog, AniActionPayload } from '../types';
+import { calculateGoalVitality } from '../utils/treeLifecycle';
 
 export interface GroveGoalSummary {
   id: string;
@@ -8,6 +9,7 @@ export interface GroveGoalSummary {
   accruedMinutes: number;
   targetMinutes: number;
   health: number;
+  vitality?: string;
   daysSinceFocus?: number;
 }
 
@@ -109,30 +111,24 @@ export function buildGroveContext(
     : activeGoals[0];
 
   const allActiveGoals: GroveGoalSummary[] = activeGoals.map(g => {
-    const progress = g.totalTargetMinutes > 0
-      ? Math.min(100, Math.round((g.accruedMinutes / g.totalTargetMinutes) * 100))
-      : 0;
-    const daysSince = g.lastFocusDate
-      ? Math.floor((now - g.lastFocusDate) / (1000 * 60 * 60 * 24))
-      : undefined;
+    const report = calculateGoalVitality(g, now, profile.logs || []);
     return {
       id: g.id,
       name: g.name,
       species: g.type,
-      progress,
+      progress: report.growthPct,
       accruedMinutes: g.accruedMinutes,
       targetMinutes: g.totalTargetMinutes,
-      health: g.health,
-      daysSinceFocus: daysSince
+      health: report.health,
+      vitality: report.vitality,
+      daysSinceFocus: report.daysSinceLastFocus
     };
   });
 
   const neglectedGoals = activeGoals
     .filter(g => {
-      if (g.health < 80) return true;
-      if (g.lastFocusDate && (now - g.lastFocusDate) > 48 * 60 * 60 * 1000) return true;
-      if (!g.lastFocusDate && (now - g.startDate) > 24 * 60 * 60 * 1000) return true;
-      return false;
+      const report = calculateGoalVitality(g, now, profile.logs || []);
+      return report.isWilting;
     })
     .map(g => g.name);
 

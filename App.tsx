@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { storageService } from './services/storageService';
 import { authService } from './services/authService';
 import { soundEngine } from './utils/audioEngine';
+import { calculateGoalVitality, applySessionUpdate, TreeVitality } from './utils/treeLifecycle';
 
 // Lazy-loaded App Modules (Loaded on-demand to keep landing page bundle ultra-lean)
 const GoalModal = lazy(() => import('./components/GoalModal'));
@@ -364,20 +365,14 @@ const SaplingAppContent: React.FC = () => {
 
       if (activeSessionGoal && activeSessionGoal !== 'pomodoro') {
         const goalId = (activeSessionGoal as SaplingGoal).id;
+        const now = Date.now();
         updatedGrove = prev.grove.map(g => {
           if (g.id === goalId) {
-            const newAccrued = g.accruedMinutes + minutes;
-            const complete = isComplete || newAccrued >= g.totalTargetMinutes;
-            if (complete) {
-              harvestedName = g.name;
+            const updated = applySessionUpdate(g, minutes, isComplete, now);
+            if (updated.isComplete && !g.isComplete) {
+              harvestedName = updated.name;
             }
-            return {
-              ...g,
-              accruedMinutes: complete ? Math.max(newAccrued, g.totalTargetMinutes) : newAccrued,
-              lastFocusDate: Date.now(),
-              isComplete: complete,
-              health: Math.min(100, g.health + 15)
-            };
+            return updated;
           }
           return g;
         });
@@ -460,10 +455,18 @@ const SaplingAppContent: React.FC = () => {
   const renderGrove = () => {
     const activeGoals = profile.grove.filter(g => !g.isComplete);
     const completedGoals = profile.grove.filter(g => g.isComplete);
-    const activeGoal = activeGoals.find(g => g.id === selectedGroveGoalId) || activeGoals[0];
-    const progressPct = activeGoal 
-      ? Math.min(100, Math.round((activeGoal.accruedMinutes / activeGoal.totalTargetMinutes) * 100))
-      : 0;
+    const rawActiveGoal = activeGoals.find(g => g.id === selectedGroveGoalId) || activeGoals[0];
+
+    // Authoritative dynamic vitality derived from intention + session logs (Invariants 1-10)
+    const vitalityReport = rawActiveGoal
+      ? calculateGoalVitality(rawActiveGoal, Date.now(), profile.logs)
+      : null;
+
+    const activeGoal: SaplingGoal | undefined = rawActiveGoal && vitalityReport
+      ? { ...rawActiveGoal, health: vitalityReport.health, vitality: vitalityReport.vitality }
+      : rawActiveGoal;
+
+    const progressPct = vitalityReport ? vitalityReport.growthPct : 0;
 
     return (
       <div className="space-y-2.5 sm:space-y-3 p-3 xs:p-4 sm:p-5 animate-in fade-in duration-500 hud-grid flex flex-col">
@@ -749,13 +752,30 @@ const SaplingAppContent: React.FC = () => {
 
               {/* Grounding Telemetry & Biological Maturation */}
               <div className="w-full max-w-sm sm:max-w-md mx-auto space-y-2 sm:space-y-2.5 px-2 sm:px-4">
-                {/* Maturation Status */}
+                {/* Maturation & Vitality Telemetry */}
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-[6.5px] xs:text-[7px] sm:text-[7.5px] pixel-font text-green-300 uppercase tracking-wider font-bold">
                     <span>
-                      {progressPct < 25 ? 'STAGE 1: SEED' : progressPct < 50 ? 'STAGE 2: SPROUT' : progressPct < 85 ? 'STAGE 3: SAPLING' : 'STAGE 4: MATURE'}
+                      {vitalityReport?.growthStage === 'Seed' ? 'STAGE 1: SEED' : vitalityReport?.growthStage === 'Sprout' ? 'STAGE 2: SPROUT' : vitalityReport?.growthStage === 'Sapling' ? 'STAGE 3: SAPLING' : 'STAGE 4: MATURE'}
                     </span>
-                    <span className="text-white">{progressPct}% EVOLUTION</span>
+                    <div className="flex items-center gap-1.5">
+                      {vitalityReport && (
+                        <span className={`px-1.5 py-0.5 text-[5.5px] xs:text-[6px] sm:text-[6.5px] border ${
+                          vitalityReport.vitality === TreeVitality.THRIVING
+                            ? 'border-green-500/60 text-green-300 bg-green-950/40'
+                            : vitalityReport.vitality === TreeVitality.HEALTHY
+                            ? 'border-emerald-500/60 text-emerald-300 bg-emerald-950/40'
+                            : vitalityReport.isRecovering
+                            ? 'border-amber-500/60 text-amber-300 bg-amber-950/40 animate-pulse'
+                            : vitalityReport.vitality === TreeVitality.WILTING
+                            ? 'border-amber-600/60 text-amber-400 bg-amber-950/30'
+                            : 'border-zinc-700 text-zinc-400 bg-zinc-900/50'
+                        }`}>
+                          VITALITY: {vitalityReport.vitality.toUpperCase()}{vitalityReport.isRecovering ? ' • RECOVERING' : ''}
+                        </span>
+                      )}
+                      <span className="text-white">{progressPct}% EVOLUTION</span>
+                    </div>
                   </div>
                   <div className="h-1.5 sm:h-2 bg-[#050c05] w-full border border-green-900/60 overflow-hidden shadow-inner">
                     <div 
@@ -767,6 +787,13 @@ const SaplingAppContent: React.FC = () => {
                     <span>STORED: {Math.floor(activeGoal.accruedMinutes / 60)}H {Math.round(activeGoal.accruedMinutes % 60)}M</span>
                     <span>HORIZON: {activeGoal.totalTargetMinutes}M</span>
                   </div>
+                  {vitalityReport && (
+                    <div className="text-center pt-0.5">
+                      <p className="font-editorial text-[10px] sm:text-[11px] text-green-300/80 italic">
+                        {vitalityReport.poeticStatus}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Primary Cultivation Actions */}

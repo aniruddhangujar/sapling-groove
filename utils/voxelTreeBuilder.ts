@@ -55,8 +55,38 @@ class VoxelGrid {
 }
 
 /**
+ * Species-Preserving Desaturation:
+ * Keeps ~50% of original species hue while desiccating the tone towards weathered earth.
+ * Cherry Blossom -> Dusty rose/mauve
+ * Oak -> Dry olive-umber
+ * Bamboo -> Dry pale reed yellow-green
+ * Pine -> Dry spruce sage
+ * Maple -> Dry amber-rust
+ * Cactus -> Weathered desert sage
+ * etc.
+ */
+export function desaturateToWilted(hex: string, desaturation = 0.52, darken = 0.85): string {
+  if (!hex || hex[0] !== '#') return hex;
+  const num = parseInt(hex.slice(1), 16);
+  if (isNaN(num)) return hex;
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+  // Earthy desiccated undertone (dry leaf tint: slightly warm/umber)
+  const targetR = lum * 1.05;
+  const targetG = lum * 0.95;
+  const targetB = lum * 0.75;
+  
+  const nr = Math.min(255, Math.max(0, Math.round((r * (1 - desaturation) + targetR * desaturation) * darken)));
+  const ng = Math.min(255, Math.max(0, Math.round((g * (1 - desaturation) + targetG * desaturation) * darken)));
+  const nb = Math.min(255, Math.max(0, Math.round((b * (1 - desaturation) + targetB * desaturation) * darken)));
+  return `#${((1 << 24) + (nr << 16) + (ng << 8) + nb).toString(16).slice(1)}`;
+}
+
+/**
  * Directional voxel lighting: evaluates lighting based on normalized coordinates and light source,
- * with support for interior bioluminescent ambient glow
+ * with support for interior bioluminescent ambient glow and species-preserving wilting
  */
 function getShadedLeafColor(
   palette: TreePalette, 
@@ -66,25 +96,36 @@ function getShadedLeafColor(
   isWilting: boolean,
   isInnerGlow = false
 ): string {
-  if (isWilting) return COLORS.WILTING;
-  if (isInnerGlow) {
+  let baseColor: string;
+  if (isInnerGlow && !isWilting) {
     // Warm golden/amber bioluminescence radiating from interior branch lanterns
-    return palette.accent || '#fde047';
+    baseColor = palette.accent || '#fde047';
+  } else {
+    // Normalized directional lighting from overhead light shaft (-X, +Y, +Z)
+    const bias = -nx * 0.35 + ny * 0.65 + nz * 0.30;
+    if (bias > 0.38) baseColor = palette.leafHighlight;
+    else if (bias > 0.05) baseColor = palette.leafLight;
+    else if (bias > -0.30) baseColor = palette.leafMid;
+    else baseColor = palette.leafDark;
   }
-  // Normalized directional lighting from overhead light shaft (-X, +Y, +Z)
-  const bias = -nx * 0.35 + ny * 0.65 + nz * 0.30;
-  if (bias > 0.38) return palette.leafHighlight;
-  if (bias > 0.05) return palette.leafLight;
-  if (bias > -0.30) return palette.leafMid;
-  return palette.leafDark;
+
+  if (isWilting) {
+    return desaturateToWilted(baseColor, 0.55, 0.82);
+  }
+  return baseColor;
 }
 
 function getShadedBarkColor(palette: TreePalette, nx: number, nz: number, isWilting: boolean): string {
-  if (isWilting) return COLORS.DEAD;
   const bias = -nx * 0.6 + nz * 0.4;
-  if (bias > 0.35) return palette.trunkLight;
-  if (bias > -0.30) return palette.trunkMid;
-  return palette.trunkDark;
+  let baseColor: string;
+  if (bias > 0.35) baseColor = palette.trunkLight;
+  else if (bias > -0.30) baseColor = palette.trunkMid;
+  else baseColor = palette.trunkDark;
+
+  if (isWilting) {
+    return desaturateToWilted(baseColor, 0.40, 0.78);
+  }
+  return baseColor;
 }
 
 // =========================================================================
@@ -112,11 +153,11 @@ function buildVoxelTrunk(
     const r = baseRadius * (1 - t) + topRadius * t;
     const cx = baseX + curveX * t * t;
     const cz = baseZ + curveZ * t * t;
-
     const ir = Math.max(1, Math.round(r));
+
     for (let dx = -ir; dx <= ir; dx++) {
       for (let dz = -ir; dz <= ir; dz++) {
-        if (dx * dx + dz * dz <= ir * ir + 0.5) {
+        if (dx * dx + dz * dz <= r * r) {
           const col = getShadedBarkColor(palette, dx / ir, dz / ir, isWilting);
           grid.add(cx + dx, baseY + y, cz + dz, col);
         }
@@ -140,22 +181,20 @@ function buildVoxelBranch(
   palette: TreePalette,
   isWilting = false
 ) {
-  const dx = endX - startX;
-  const dy = endY - startY;
-  const dz = endZ - startZ;
-  const steps = Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz), 1) * 1.5;
+  const dist = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2 + (endZ - startZ) ** 2);
+  const steps = Math.max(3, Math.round(dist * 1.5));
+  const th = Math.max(1, Math.round(thickness));
 
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
-    const x = startX + dx * t;
-    const y = startY + dy * t;
-    const z = startZ + dz * t;
+    const cx = startX + (endX - startX) * t;
+    const cy = startY + (endY - startY) * t;
+    const cz = startZ + (endZ - startZ) * t;
 
-    const th = Math.max(1, Math.round(thickness * (1 - t * 0.4)));
-    for (let ox = -th + 1; ox <= th - 1; ox++) {
-      for (let oz = -th + 1; oz <= th - 1; oz++) {
+    for (let ox = -th; ox <= th; ox++) {
+      for (let oz = -th; oz <= th; oz++) {
         const col = getShadedBarkColor(palette, ox / th, oz / th, isWilting);
-        grid.add(x + ox, y, z + oz, col);
+        grid.add(cx + ox, cy, cz + oz, col);
       }
     }
   }
@@ -180,17 +219,22 @@ function buildVoxelFoliageCluster(
   const irx = Math.max(1, Math.round(rx));
   const iry = Math.max(1, Math.round(ry));
   const irz = Math.max(1, Math.round(rz));
+  // Wilting reduces canopy fullness (sparser outer leaves)
+  const effDensity = isWilting ? density * 0.72 : density;
 
   for (let dy = -iry; dy <= iry; dy++) {
     for (let dx = -irx; dx <= irx; dx++) {
       for (let dz = -irz; dz <= irz; dz++) {
         const normDist = (dx * dx) / (irx * irx) + (dy * dy) / (iry * iry) + (dz * dz) / (irz * irz);
         if (normDist <= 1.05) {
-          if (normDist > 0.75 && prng() > density) continue;
+          if (normDist > 0.70 && prng() > effDensity) continue;
           // Bioluminescent glow on interior/underside leaves catching warm branch light
           const isInnerGlow = !isWilting && dy <= 0 && normDist < 0.65 && prng() > 0.65;
           const col = getShadedLeafColor(palette, dx / irx, dy / iry, dz / irz, isWilting, isInnerGlow);
-          grid.add(cx + dx, cy + dy, cz + dz, col);
+          
+          // Organic downward foliage droop when wilting (outer foliage dips down 1 voxel)
+          const droop = isWilting && normDist > 0.5 ? -1 : 0;
+          grid.add(cx + dx, cy + dy + droop, cz + dz, col);
         }
       }
     }
