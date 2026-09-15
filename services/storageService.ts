@@ -132,6 +132,7 @@ export class StorageService {
           : validLogs.reduce((sum, l) => sum + l.durationMinutes, 0),
         grove: validGrove,
         logs: validLogs,
+        groveTourCompleted: Boolean(parsed.groveTourCompleted),
         preferences: {
           soundscape: validSound,
           soundEnabled: parsed.preferences?.soundEnabled !== false,
@@ -260,6 +261,7 @@ export class StorageService {
         email: sanitizeString(auth?.currentUser?.email, 120, ''),
         isPremium: Boolean(profile.isPremium),
         totalFocusTime: profile.totalFocusTime,
+        groveTourCompleted: Boolean(profile.groveTourCompleted),
         updatedAt: serverTimestamp(),
         createdAt: serverTimestamp()
       }, { merge: true });
@@ -375,6 +377,7 @@ export class StorageService {
         totalFocusTime: mergedTotalFocusTime,
         grove: Array.from(goalMap.values()),
         logs: mergedLogs,
+        groveTourCompleted: Boolean((userSnap.exists() && userSnap.data().groveTourCompleted) || localProfile.groveTourCompleted),
         preferences: {
           ...localProfile.preferences,
           ecoCanopyMode: Boolean(
@@ -522,6 +525,7 @@ export class StorageService {
       totalFocusTime: mergedFocusTime,
       grove: Array.from(goalMap.values()),
       logs: mergedLogs,
+      groveTourCompleted: Boolean(targetProfile.groveTourCompleted || parsedGuest.groveTourCompleted),
       preferences: {
         ...targetProfile.preferences,
         soundscape: targetProfile.preferences?.soundscape || parsedGuest.preferences?.soundscape || 'zen',
@@ -588,6 +592,7 @@ export class StorageService {
       totalFocusTime: 0,
       grove: [],
       logs: [],
+      groveTourCompleted: false,
       preferences: {
         soundscape: 'zen',
         soundEnabled: true

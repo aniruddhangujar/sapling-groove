@@ -85,6 +85,7 @@ export interface UserProfile {
   totalFocusTime: number;
   grove: SaplingGoal[];
   logs: FocusSessionLog[];
+  groveTourCompleted?: boolean;
   preferences?: {
     soundscape?: string;
     soundEnabled?: boolean;

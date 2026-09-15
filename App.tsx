@@ -15,6 +15,7 @@ const FocusSession = lazy(() => import('./components/FocusSession'));
 const AniChat = lazy(() => import('./components/AniChat'));
 const SanctuaryModal = lazy(() => import('./components/SanctuaryModal'));
 const AuthModal = lazy(() => import('./components/AuthModal'));
+import GroveTour, { TourStepId } from './components/GroveTour';
 
 const SaplingLogo: React.FC = () => (
   <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 bg-[#061206] border-2 border-green-800/40 flex items-center justify-center relative shadow-[0_0_20px_rgba(34,197,94,0.15)] overflow-hidden shrink-0">
@@ -113,8 +114,34 @@ const SaplingAppContent: React.FC = () => {
   } | null>(null);
   const [selectedGroveGoalId, setSelectedGroveGoalId] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [isTourActive, setIsTourActive] = useState<boolean>(false);
+  const [tourStep, setTourStep] = useState<TourStepId>('welcome');
   const navRef = useRef<HTMLElement>(null);
   const [navHeight, setNavHeight] = useState<number>(0);
+
+  const currentGroveGoal = useMemo(() => {
+    const active = profile.grove.filter(g => !g.isComplete);
+    return active.find(g => g.id === selectedGroveGoalId) || active[0] || null;
+  }, [profile.grove, selectedGroveGoalId]);
+
+  // Trigger guided discovery tour on first entry to Grove (settle delay so real Grove renders first)
+  useEffect(() => {
+    if (viewMode === 'app' && !profile.groveTourCompleted) {
+      const timer = setTimeout(() => {
+        setIsTourActive(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode, profile.groveTourCompleted]);
+
+  const handleTourDismiss = useCallback(() => {
+    setIsTourActive(false);
+    setProfile(prev => {
+      const updated = { ...prev, groveTourCompleted: true };
+      storageService.saveProfile(updated);
+      return updated;
+    });
+  }, []);
 
   // Monitor network connectivity for offline tolerance
   useEffect(() => {
@@ -345,6 +372,10 @@ const SaplingAppContent: React.FC = () => {
     const created = storageService.addGoal(newGoal);
     setProfile(prev => ({ ...prev, grove: [...prev.grove, created] }));
     setShowGoalModal(false);
+    setSelectedGroveGoalId(created.id);
+    if (isTourActive && tourStep === 'plant') {
+      setTourStep('acknowledge');
+    }
   };
 
   const handleFocusFinish = (minutes: number, isComplete: boolean, log: FocusSessionLog) => {
@@ -479,12 +510,24 @@ const SaplingAppContent: React.FC = () => {
                 <h1 className="pixel-font text-sm xs:text-base sm:text-lg text-white uppercase tracking-wider font-bold">
                   The Grove
                 </h1>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTourActive(true);
+                    setTourStep('welcome');
+                  }}
+                  title="Replay Grove Tour"
+                  className="pixel-font text-[6.5px] xs:text-[7px] text-zinc-500 hover:text-green-300 border border-green-950/60 bg-[#051105] px-1 py-0.5 ml-0.5 transition-colors cursor-pointer"
+                >
+                  ? GUIDE
+                </button>
               </div>
               <p className="text-green-400/80 text-[7px] sm:text-[8px] uppercase tracking-widest font-display font-medium">
                 Sanctuary of Attention
               </p>
             </div>
             <button 
+              data-tour="plant-seed"
               onClick={() => setShowGoalModal(true)} 
               className="px-2.5 xs:px-3 sm:px-4 py-1.5 border border-green-800/80 bg-[#061406] hover:bg-[#0c240c] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[7px] xs:text-[7.5px] sm:text-[8px] uppercase tracking-wider transition-all shadow-sm flex items-center gap-1 min-h-[36px]"
             >
@@ -695,7 +738,7 @@ const SaplingAppContent: React.FC = () => {
           {activeGoals.length === 0 ? (
             /* Poetic & Inspiring Empty State */
             <div className="relative flex flex-col items-center justify-center py-8 sm:py-14 text-center max-w-md mx-auto">
-              <div className="relative w-48 sm:w-56 aspect-square flex items-center justify-center mb-2">
+              <div data-tour="hero-tree" className="relative w-48 sm:w-56 aspect-square flex items-center justify-center mb-2">
                 <div className="absolute inset-0 rounded-full bg-green-500/5 blur-2xl pointer-events-none" />
                 <SaplingCanvas 
                   goal={dummySeedGoal} 
@@ -711,6 +754,7 @@ const SaplingAppContent: React.FC = () => {
                 Every forest begins with a single, quiet dedication of attention. Plant an intention to cultivate your first tree.
               </p>
               <PixelButton
+                data-tour="plant-seed"
                 variant="success"
                 onClick={() => setShowGoalModal(true)}
                 className="py-2.5 px-5 text-[8.5px] sm:text-[9px] tracking-widest uppercase h-10 sm:h-11 shadow-[0_0_20px_rgba(34,197,94,0.3)] font-bold"
@@ -741,7 +785,7 @@ const SaplingAppContent: React.FC = () => {
               </p>
 
               {/* Hero Tree Canvas Showcase */}
-              <div className="relative z-10 w-36 xs:w-44 sm:w-48 aspect-square flex items-center justify-center my-0.5">
+              <div data-tour="hero-tree" className="relative z-10 w-36 xs:w-44 sm:w-48 aspect-square flex items-center justify-center my-0.5">
                 <SaplingCanvas 
                   goal={activeGoal} 
                   size={190} 
@@ -799,6 +843,7 @@ const SaplingAppContent: React.FC = () => {
                 {/* Primary Cultivation Actions */}
                 <div className="flex flex-row items-center justify-center gap-1.5 xs:gap-2 pt-1 w-full max-w-full">
                   <PixelButton 
+                    data-tour="groove-btn"
                     variant="success"
                     onClick={() => startGoalRitual(activeGoal, 'groove')}
                     className="flex-1 py-2.5 sm:py-3 text-[7.5px] xs:text-[8.5px] sm:text-[9.5px] tracking-wider xs:tracking-widest uppercase h-10 xs:h-11 sm:h-12 shadow-[0_0_25px_rgba(34,197,94,0.25)] font-bold whitespace-nowrap min-w-0 px-2 xs:px-4"
@@ -808,6 +853,7 @@ const SaplingAppContent: React.FC = () => {
                     <span className="xs:hidden">[ GROOVE ]</span>
                   </PixelButton>
                   <PixelButton 
+                    data-tour="chronos-btn"
                     variant="primary"
                     onClick={() => startGoalRitual(activeGoal, 'chronos')}
                     className="px-2.5 xs:px-4 sm:w-32 py-2.5 sm:py-3 text-[7px] xs:text-[8px] sm:text-[8.5px] tracking-wider uppercase h-10 xs:h-11 sm:h-12 whitespace-nowrap shrink-0"
@@ -1276,6 +1322,7 @@ const SaplingAppContent: React.FC = () => {
           return (
             <button 
               key={tab.id}
+              data-tour={`nav-${tab.id === 'tasks' ? 'pomo' : tab.id}`}
               type="button"
               onClick={() => handleTabChange(tab.id as AppTab)}
               aria-current={isActive ? 'page' : undefined}
@@ -1329,6 +1376,36 @@ const SaplingAppContent: React.FC = () => {
           />
         )}
       </Suspense>
+
+      {/* Guided First-Time Grove Discovery Tour */}
+      {isTourActive && !activeSessionGoal && !showGoalModal && !showSanctuaryModal && !showAuthModal && viewMode === 'app' && activeTab === 'grove' && (
+        <GroveTour
+          currentStep={tourStep}
+          onStepChange={setTourStep}
+          onComplete={handleTourDismiss}
+          onSkip={handleTourDismiss}
+          onOpenGoalModal={() => setShowGoalModal(true)}
+          onTryChronos={() => {
+            if (currentGroveGoal) {
+              startGoalRitual(currentGroveGoal, 'chronos', 25);
+            } else {
+              startUtilityRitual(25);
+            }
+          }}
+          onTryGroove={() => {
+            if (currentGroveGoal) {
+              startGoalRitual(currentGroveGoal, 'groove');
+            } else {
+              setUtilityMode('groove');
+              startUtilityRitual();
+            }
+          }}
+          onTryPomo={() => handleTabChange('tasks')}
+          onTryLogs={() => handleTabChange('logs')}
+          onTryAni={() => handleTabChange('ani')}
+          hasActiveGoal={Boolean(currentGroveGoal)}
+        />
+      )}
     </div>
   );
 };
