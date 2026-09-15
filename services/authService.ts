@@ -14,7 +14,6 @@ import {
 import { User } from '../types';
 import { auth, googleProvider, githubProvider, isFirebaseConfigured } from './firebase';
 import { storageService } from './storageService';
-import { isMobileBrowser } from '../utils/deviceDetection';
 
 const AUTH_USER_KEY = 'sapling_auth_user_v1';
 const AUTH_REDIRECT_MARKER = 'sapling_auth_redirect_in_progress';
@@ -225,9 +224,24 @@ export class AuthService {
   }
 
   /**
-   * Cross-platform Google Sign-In:
-   * Desktop: signInWithPopup() (preserves working desktop flow)
-   * Mobile: signInWithRedirect() (fixes Android Chrome popup failure)
+   * Checks whether the current production environment has aligned authDomain
+   * (e.g. via Vercel reverse proxy or custom domain) to safely support redirect
+   * authentication without hitting third-party storage partitioning restrictions.
+   */
+  public isRedirectAuthSupported(): boolean {
+    if (typeof window === 'undefined') return false;
+    const currentHost = window.location.hostname;
+    const configuredAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '';
+    // Supported if running on same domain as authDomain or custom reverse proxy
+    return Boolean(configuredAuthDomain && configuredAuthDomain === currentHost);
+  }
+
+  /**
+   * Universal Popup-First Google Sign-In:
+   * Uses signInWithPopup() as the primary authentication flow across desktop and mobile.
+   * This bypasses third-party storage partitioning restrictions (Chrome M115+, Safari ITP)
+   * while the app is hosted on Vercel with sapling-13e4f.firebaseapp.com authDomain.
+   * If popup is blocked, only falls back to redirect if the infrastructure is configured for it.
    */
   public async signInWithGoogle(): Promise<User | null> {
     if (!this.isConfigured() || !auth) {
@@ -236,33 +250,48 @@ export class AuthService {
       );
     }
 
-    const isMobile = isMobileBrowser();
-
-    if (isMobile) {
-      try {
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem(AUTH_REDIRECT_MARKER, 'google');
-        }
-        await signInWithRedirect(auth, googleProvider);
-        // Browser is navigating away for OAuth redirect
-        return null;
-      } catch (err: any) {
-        try {
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.removeItem(AUTH_REDIRECT_MARKER);
-          }
-        } catch {}
-        throw new Error(this.formatAuthError(err));
-      }
-    }
-
-    // Desktop: Continue using popup
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = this.mapFirebaseUser(result.user);
       this.saveUser(user);
       return user;
     } catch (err: any) {
+      const code = err?.code || '';
+
+      // If and ONLY IF popup fails specifically due to environment/popup restrictions:
+      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+        // Only attempt redirect if production has verified redirect infrastructure (aligned authDomain)
+        if (this.isRedirectAuthSupported()) {
+          console.warn("[AuthService] Popup restricted; falling back to configured redirect auth.");
+          try {
+            if (typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem(AUTH_REDIRECT_MARKER, 'google');
+            }
+            await signInWithRedirect(auth, googleProvider);
+            return null;
+          } catch (redirectErr: any) {
+            try {
+              if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem(AUTH_REDIRECT_MARKER);
+              }
+            } catch {}
+            throw new Error(this.formatAuthError(redirectErr));
+          }
+        }
+
+        // If redirect infrastructure is not configured, show clear actionable instruction instructing the user to allow popups / retry
+        if (code === 'auth/popup-blocked') {
+          throw new Error(
+            'Authentication popup was blocked by your browser. Please allow popups for this site in your browser settings and tap Sign In again.'
+          );
+        } else {
+          throw new Error(
+            'Popup authentication is not supported or restricted in this browser environment. Please allow popups or open this site in a standard mobile browser (Chrome/Safari).'
+          );
+        }
+      }
+
+      // For all other errors (unauthorized-domain, network failure, user cancellation, etc.), show error without redirecting
       throw new Error(this.formatAuthError(err));
     }
   }
@@ -422,7 +451,9 @@ export class AuthService {
       case 'auth/configuration-not-found':
         return 'Authentication configuration not found for this project. Please check Firebase configuration.';
       case 'auth/popup-blocked':
-        return 'Authentication popup was blocked by your browser. Please allow popups or use redirect authentication.';
+        return 'Authentication popup was blocked by your browser. Please allow popups for this site in your browser settings and try again.';
+      case 'auth/operation-not-supported-in-this-environment':
+        return 'Popup authentication is restricted in this browser environment. Please allow popups or open this site in standard browser.';
       case 'auth/popup-closed-by-user':
         return 'Authentication window closed before completion.';
       case 'auth/cancelled-popup-request':

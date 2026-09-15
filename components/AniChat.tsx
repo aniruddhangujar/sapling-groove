@@ -458,8 +458,8 @@ const AniChat: React.FC<Props> = ({
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none hud-grid" />
 
       {/* Header Bar */}
-      <div className="px-2.5 xs:px-4 sm:px-6 py-2 sm:py-3 border-b-2 border-green-950/60 bg-[#040a04]/95 backdrop-blur-md flex items-center justify-between z-10 shrink-0 gap-2">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      <div className="px-3 sm:px-6 py-2.5 sm:py-3.5 border-b-2 border-green-950/60 bg-[#040a04]/95 backdrop-blur-md flex items-center justify-between z-10 shrink-0 gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-green-900/60 bg-[#061206] flex items-center justify-center relative shadow-[0_0_15px_rgba(34,197,94,0.15)] shrink-0">
              <div className="absolute -top-0.5 -left-0.5 w-1 h-1 bg-green-500" />
              <div className="absolute -bottom-0.5 -right-0.5 w-1 h-1 bg-green-500" />
@@ -467,66 +467,77 @@ const AniChat: React.FC<Props> = ({
               <circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/>
             </svg>
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 xs:gap-2">
-              <h2 className="pixel-font text-xs sm:text-sm tracking-wider uppercase font-bold text-white shrink-0">
-                ANI
-              </h2>
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 border border-green-900/50 bg-[#061406] text-[6.5px] sm:text-[7px] pixel-font text-green-400 font-bold uppercase tracking-wider shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                FOCUS ARCHITECT
-              </span>
-            </div>
-            <p className="pixel-font text-[6px] xs:text-[6.5px] sm:text-[7.5px] text-green-500 uppercase tracking-widest font-bold truncate mt-0.5 max-w-[140px] xs:max-w-[220px] sm:max-w-none">
-              {groveContext.currentGoalName 
-                ? `ACTIVE INTENTION: ${groveContext.currentGoalName} (${groveContext.currentGoalProgress || 0}%)`
-                : `${(profile?.grove || []).length} SEEDS IN SOIL • LISTENING`}
-            </p>
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="pixel-font text-xs sm:text-sm tracking-wider uppercase font-bold text-white shrink-0">
+              ANI
+            </h2>
+            <span className="hidden xs:inline-flex items-center gap-1 px-2 py-0.5 border border-green-900/50 bg-[#061406] text-[7px] sm:text-[7.5px] pixel-font text-green-400 font-bold uppercase tracking-wider shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              FOCUS ARCHITECT
+            </span>
           </div>
         </div>
 
-        {/* Clear Conversation Shortcut with In-Place 2-Step Confirmation */}
-        {!confirmClear ? (
-          <button
-            type="button"
-            onClick={() => setConfirmClear(true)}
-            className="text-green-400 hover:text-green-200 pixel-font text-[7px] sm:text-[8px] uppercase tracking-wider border border-green-800/80 px-2 xs:px-2.5 py-1 sm:py-1.5 bg-[#061406] hover:bg-[#0c240c] transition-all shrink-0 min-h-[32px] sm:min-h-[36px] flex items-center gap-1.5 shadow-sm active:scale-[0.97] cursor-pointer"
-            title="Reset conversation memory"
-            aria-label="Clear chat memory"
-          >
-            <span className="text-green-500">↺</span>
-            <span>[ CLEAR ]</span>
-          </button>
-        ) : (
-          <div className="flex items-center gap-1 shrink-0 animate-in fade-in zoom-in-95 duration-150">
+        {/* Clear Conversation Shortcut */}
+        <div className="flex items-center justify-end shrink-0">
+          {!confirmClear ? (
             <button
               type="button"
-              onClick={() => {
-                const initial: ChatMessage[] = [
-                  { role: 'model', parts: [{ text: "Memory refreshed. The soil is clear. What project or intention shall we architect now?" }] }
-                ];
-                setMessages(initial);
-                try {
-                  localStorage.setItem('sapling_ani_chat_v3', JSON.stringify(initial));
-                } catch {}
-                setConfirmClear(false);
-              }}
-              className="text-amber-200 hover:text-white pixel-font text-[7px] sm:text-[7.5px] uppercase tracking-wider border-2 border-amber-500/90 px-2 sm:px-2.5 py-1 sm:py-1.5 bg-[#180e04] hover:bg-[#281504] transition-all shrink-0 min-h-[32px] sm:min-h-[36px] font-bold shadow-[0_0_12px_rgba(245,158,11,0.35)] animate-pulse cursor-pointer"
-              title="Confirm memory reset"
+              onClick={() => setConfirmClear(true)}
+              className="text-green-400 hover:text-green-200 pixel-font text-[7.5px] sm:text-[8px] uppercase tracking-wider border border-green-800/80 px-2.5 py-1.5 bg-[#061406] hover:bg-[#0c240c] transition-all shrink-0 min-h-[36px] flex items-center gap-1.5 shadow-sm active:scale-[0.97] cursor-pointer"
+              title="Reset conversation memory"
+              aria-label="Clear chat memory"
             >
-              [ RESET MEMORY? ]
+              <span className="text-green-500">↺</span>
+              <span>[ CLEAR ]</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setConfirmClear(false)}
-              className="text-green-400 hover:text-green-200 pixel-font text-[8px] px-1.5 py-1 border border-green-800 bg-[#050c05] hover:bg-[#0a180a] min-h-[32px] sm:min-h-[36px] min-w-[28px] sm:min-w-[32px] flex items-center justify-center transition-colors cursor-pointer"
-              title="Cancel reset"
-              aria-label="Cancel reset"
-            >
-              ✕
-            </button>
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-150">
+              <button
+                type="button"
+                onClick={() => {
+                  const initial: ChatMessage[] = [
+                    { role: 'model', parts: [{ text: "Memory refreshed. The soil is clear. What project or intention shall we architect now?" }] }
+                  ];
+                  setMessages(initial);
+                  try {
+                    localStorage.setItem('sapling_ani_chat_v3', JSON.stringify(initial));
+                  } catch {}
+                  setConfirmClear(false);
+                }}
+                className="text-amber-200 hover:text-white pixel-font text-[7px] sm:text-[7.5px] uppercase tracking-wider border-2 border-amber-500/90 px-2 py-1.5 bg-[#180e04] hover:bg-[#281504] transition-all shrink-0 min-h-[36px] font-bold shadow-[0_0_12px_rgba(245,158,11,0.35)] animate-pulse cursor-pointer"
+                title="Confirm memory reset"
+              >
+                [ RESET? ]
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmClear(false)}
+                className="text-green-400 hover:text-green-200 pixel-font text-[8px] px-2 py-1 border border-green-800 bg-[#050c05] hover:bg-[#0a180a] min-h-[36px] min-w-[30px] flex items-center justify-center transition-colors cursor-pointer"
+                title="Cancel reset"
+                aria-label="Cancel reset"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Dedicated Context Strip Bar */}
+      <div className="px-3 sm:px-6 py-1.5 bg-[#030903] border-b border-green-950/70 flex items-center justify-between text-[7px] sm:text-[8px] pixel-font text-green-400 tracking-wider z-10 shrink-0">
+        <div className="flex items-center gap-2 truncate min-w-0 mr-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+          <span className="text-green-500 font-bold uppercase shrink-0">CONTEXT:</span>
+          <span className="text-green-200 truncate font-mono text-[8px] sm:text-[9px]">
+            {groveContext.currentGoalName 
+              ? `ACTIVE INTENTION: ${groveContext.currentGoalName} (${groveContext.currentGoalProgress || 0}%)`
+              : `${(profile?.grove || []).length} SEEDS IN SOIL • LISTENING`}
+          </span>
+        </div>
+        <span className="text-[6.5px] text-green-600 uppercase tracking-widest shrink-0 hidden xs:inline">
+          NEURAL LINK ONLINE
+        </span>
       </div>
 
       {/* Messages Area */}
@@ -563,6 +574,30 @@ const AniChat: React.FC<Props> = ({
                   );
                 })}
 
+                {/* 2-Column Tactical Quick Launch Grid for Empty / Fresh Chat */}
+                {messages.length <= 1 && i === 0 && (
+                  <div className="mt-4 pt-3 border-t border-green-950/80">
+                    <div className="text-[7px] pixel-font text-green-500 uppercase tracking-widest mb-2 font-bold flex items-center gap-1.5">
+                      <span className="w-1 h-1 bg-green-400" />
+                      QUICK INTENTIONS // SELECT TO COMMENCE:
+                    </div>
+                    <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
+                      {quickChips.map((chip, chipIdx) => (
+                        <button
+                          key={chipIdx}
+                          type="button"
+                          onClick={() => executeSend(chip.prompt, null)}
+                          disabled={isLoading}
+                          className="p-2.5 border border-green-900/80 bg-[#040e04] hover:bg-[#0c240c] hover:border-green-500 text-green-300 hover:text-white pixel-font text-[7.5px] uppercase tracking-wider text-left transition-all min-h-[44px] flex items-center justify-between group shadow-sm active:scale-[0.98] disabled:opacity-50"
+                        >
+                          <span className="leading-snug">{chip.label}</span>
+                          <span className="text-green-600 group-hover:text-green-300 ml-1 shrink-0">→</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Render Executable Action Card if present */}
                 {msg.action && renderActionCard(msg.action, i, msg.actionExecuted)}
               </div>
@@ -585,20 +620,22 @@ const AniChat: React.FC<Props> = ({
 
       {/* Input Bar Overlay with Dynamic Contextual Action Chips */}
       <div className="p-2 sm:p-3 border-t-2 border-green-950/60 bg-[#040a04]/98 backdrop-blur-md z-10 shrink-0 space-y-2">
-        {/* Dynamic Contextual Action Chips Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar px-0.5">
-          {quickChips.map((chip, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => executeSend(chip.prompt, null)}
-              disabled={isLoading}
-              className="px-2.5 py-1.5 border border-green-900/70 bg-[#061406] hover:bg-[#0c240c] hover:border-green-500 text-green-300 hover:text-white pixel-font text-[6.5px] sm:text-[7.5px] uppercase tracking-wider transition-all whitespace-nowrap shrink-0 shadow-sm flex items-center gap-1.5 disabled:opacity-50 min-h-[32px]"
-            >
-              <span>{chip.label}</span>
-            </button>
-          ))}
-        </div>
+        {/* Horizontal Swipe Strip During Active Conversation */}
+        {messages.length > 1 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar px-0.5">
+            {quickChips.map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => executeSend(chip.prompt, null)}
+                disabled={isLoading}
+                className="px-2.5 py-1.5 border border-green-900/70 bg-[#061406] hover:bg-[#0c240c] hover:border-green-500 text-green-300 hover:text-white pixel-font text-[7px] sm:text-[7.5px] uppercase tracking-wider transition-all whitespace-nowrap shrink-0 shadow-sm flex items-center gap-1.5 disabled:opacity-50 min-h-[36px] active:scale-[0.97]"
+              >
+                <span>{chip.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {error && (
           <div className="p-2 bg-red-950/40 border border-red-900/60 flex items-center justify-between animate-in fade-in zoom-in-95 duration-200 rounded-sm">
@@ -675,8 +712,8 @@ const AniChat: React.FC<Props> = ({
                 }
               }}
               placeholder="Ask Ani to plant a seed, start a timer, or decompose a task..."
-              className="w-full bg-transparent text-green-100 outline-none text-xs sm:text-sm font-sans placeholder:text-green-800/90 placeholder:font-mono resize-none overflow-y-auto custom-scrollbar block leading-snug"
-              style={{ minHeight: '20px', maxHeight: '100px', height: '20px' }}
+              className="w-full bg-transparent text-green-100 outline-none text-base sm:text-sm font-sans placeholder:text-green-800/90 placeholder:font-mono resize-none overflow-y-auto custom-scrollbar block leading-snug"
+              style={{ minHeight: '22px', maxHeight: '100px', height: '22px' }}
               rows={1}
             />
           </div>

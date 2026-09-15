@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PixelButton from './PixelButton';
-import { isMobileBrowser } from '../utils/deviceDetection';
 
 interface Props {
   onClose: () => void;
@@ -56,28 +55,17 @@ const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
     setErrorMsg(null);
     clearRedirectError();
     setIsProcessing(true);
-
-    const isMobile = isMobileBrowser();
-    if (isMobile) {
-      setStatusMsg('Redirecting to Google secure authentication...');
-    } else {
-      setStatusMsg(null);
-    }
+    setStatusMsg(null);
 
     try {
       await signInWithGoogle();
-      if (!isMobile) {
-        onSuccess?.();
-        onClose();
-      }
+      onSuccess?.();
+      onClose();
     } catch (err: any) {
       setErrorMsg(err.message || 'Google authentication error.');
       setStatusMsg(null);
-      setIsProcessing(false);
     } finally {
-      if (!isMobile) {
-        setIsProcessing(false);
-      }
+      setIsProcessing(false);
     }
   };
 

@@ -770,19 +770,20 @@ const SaplingAppContent: React.FC = () => {
                 </div>
 
                 {/* Primary Cultivation Actions */}
-                <div className="flex flex-row items-center justify-center gap-2 pt-1 w-full">
+                <div className="flex flex-row items-center justify-center gap-1.5 xs:gap-2 pt-1 w-full max-w-full">
                   <PixelButton 
                     variant="success"
                     onClick={() => startGoalRitual(activeGoal, 'groove')}
-                    className="flex-1 py-2.5 sm:py-3 text-[8px] xs:text-[8.5px] sm:text-[9.5px] tracking-wider xs:tracking-widest uppercase h-10 xs:h-11 sm:h-12 shadow-[0_0_25px_rgba(34,197,94,0.25)] font-bold whitespace-nowrap"
+                    className="flex-1 py-2.5 sm:py-3 text-[7.5px] xs:text-[8.5px] sm:text-[9.5px] tracking-wider xs:tracking-widest uppercase h-10 xs:h-11 sm:h-12 shadow-[0_0_25px_rgba(34,197,94,0.25)] font-bold whitespace-nowrap min-w-0 px-2 xs:px-4"
                     aria-label={`Start Groove focus session for ${activeGoal.name}`}
                   >
-                    [ COMMENCE GROOVE ]
+                    <span className="hidden xs:inline">[ COMMENCE GROOVE ]</span>
+                    <span className="xs:hidden">[ GROOVE ]</span>
                   </PixelButton>
                   <PixelButton 
                     variant="primary"
                     onClick={() => startGoalRitual(activeGoal, 'chronos')}
-                    className="w-24 xs:w-28 sm:w-32 py-2.5 sm:py-3 text-[7px] xs:text-[8px] sm:text-[8.5px] tracking-wider uppercase h-10 xs:h-11 sm:h-12 whitespace-nowrap shrink-0"
+                    className="px-2.5 xs:px-4 sm:w-32 py-2.5 sm:py-3 text-[7px] xs:text-[8px] sm:text-[8.5px] tracking-wider uppercase h-10 xs:h-11 sm:h-12 whitespace-nowrap shrink-0"
                     aria-label={`Start Chronos countdown for ${activeGoal.name}`}
                   >
                     CHRONOS
@@ -1061,77 +1062,136 @@ const SaplingAppContent: React.FC = () => {
 
   return (
     <div className="h-screen h-[100dvh] flex flex-col max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto border-x-2 border-green-950/30 bg-[#040a04] relative shadow-2xl overflow-hidden">
-      <header className="px-2.5 xs:px-4 py-2.5 sm:px-6 sm:py-4 md:px-8 md:py-5 border-b-2 border-green-950/20 flex justify-between items-center bg-[#040a04]/95 backdrop-blur-md sticky top-0 z-[60] pt-safe">
-        <div className="flex items-center gap-1.5 xs:gap-3 sm:gap-4 min-w-0">
-          <SaplingLogo />
-          <span className="pixel-font text-sm xs:text-lg sm:text-2xl md:text-3xl tracking-tight xs:tracking-tighter text-white drop-shadow-md shrink-0">
-            SAPLING
-          </span>
-          {/* Universal Surface / Manifesto Navigation Button */}
-          <button
-            onClick={navigateToLanding}
-            className="flex items-center gap-1 px-1.5 xs:px-2.5 py-1 border border-green-800/80 bg-[#061406] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[7px] xs:text-[7.5px] sm:text-[8px] uppercase tracking-wider transition-all ml-0.5 xs:ml-1 shrink-0 shadow-sm"
-            title="Return to Public Website / Manifesto"
-          >
-            <span className="hidden xs:inline">← SURFACE</span>
-            <span className="xs:hidden">← SURF</span>
-          </button>
-        </div>
+      <header className="px-3 py-2 sm:px-6 sm:py-4 md:px-8 md:py-5 border-b-2 border-green-950/20 bg-[#040a04]/95 backdrop-blur-md sticky top-0 z-[60] pt-safe shrink-0">
+        {/* Responsive Container: 2-tier on mobile (< sm:), single row on sm: and up */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+          
+          {/* Top Tier (Mobile) / Left Section (Desktop) */}
+          <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 min-w-0">
+              <SaplingLogo />
+              <span className="pixel-font text-xs xs:text-base sm:text-2xl md:text-3xl tracking-tight text-white drop-shadow-md shrink-0">
+                SAPLING
+              </span>
+            </div>
 
-        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0 ml-1 xs:ml-2">
-          {/* Reversible Eco Canopy Mode Toggle (Constraint 3, 9, 10) */}
-          <button
-            type="button"
-            onClick={toggleEcoCanopy}
-            className={`flex items-center gap-1 px-1.5 xs:px-2 py-1 border pixel-font text-[6.5px] xs:text-[7px] sm:text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[32px] ${
-              profile.preferences?.ecoCanopyMode
-                ? 'border-emerald-400 bg-emerald-950/70 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.3)] font-bold'
-                : 'border-green-800/70 bg-[#061406] text-green-400 hover:border-green-500 hover:text-green-200'
-            }`}
-            title={profile.preferences?.ecoCanopyMode ? "Eco Canopy Active (2D low-power mode). Click to switch to 3D Voxel." : "3D Voxel Active. Click to switch to 2D Eco Canopy for Chromebooks/battery saving."}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${profile.preferences?.ecoCanopyMode ? 'bg-emerald-400' : 'bg-green-500'}`} />
-            <span>{profile.preferences?.ecoCanopyMode ? 'ECO (2D)' : '3D VOXEL'}</span>
-          </button>
-
-          {/* User Sign In / Sign Out (Shared Lab Computer Privacy - Constraint 2) */}
-          {user && !user.isAnonymous ? (
+            {/* On Desktop: Surface Manifesto Navigation Button sits next to Logo */}
             <button
-              type="button"
-              onClick={() => signOut()}
-              className="flex items-center gap-1 px-1.5 xs:px-2 py-1 border border-zinc-700 bg-zinc-950/80 text-zinc-300 hover:text-red-300 hover:border-red-700 pixel-font text-[6.5px] xs:text-[7px] sm:text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[32px]"
-              title="Sign out & purge private session data from this computer"
+              onClick={navigateToLanding}
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 border border-green-800/80 bg-[#061406] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[8px] uppercase tracking-wider transition-all shrink-0 shadow-sm min-h-[36px]"
+              title="Return to Public Website / Manifesto"
             >
-              <span className="hidden xs:inline">SIGN OUT</span>
-              <span className="xs:hidden">EXIT</span>
+              <span>← SURFACE</span>
             </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowAuthModal(true)}
-              className="flex items-center gap-1 px-1.5 xs:px-2 py-1 border border-green-800/80 bg-[#061406] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[6.5px] xs:text-[7px] sm:text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[32px]"
-              title="Sign in to save your grove to cloud"
-            >
-              <span className="hidden xs:inline">SIGN IN</span>
-              <span className="xs:hidden">LOGIN</span>
-            </button>
-          )}
 
-          <div className="text-right flex flex-col items-end">
-             <div className="pixel-font text-[6px] sm:text-[7px] text-green-400 uppercase tracking-widest mb-0.5 font-bold whitespace-nowrap">
-               Total Focus
-             </div>
-             <div className="pixel-font text-xs xs:text-sm sm:text-base md:text-lg text-green-300 font-bold tracking-tight whitespace-nowrap">
-                {Math.floor(profile.totalFocusTime / 60)}H {Math.round(profile.totalFocusTime % 60)}M
-             </div>
+            {/* On Mobile: Controls (Eco Canopy Toggle & Sign In/Out) align to right of Top Row */}
+            <div className="flex sm:hidden items-center gap-1.5 shrink-0">
+              {/* Reversible Eco Canopy Mode Toggle */}
+              <button
+                type="button"
+                onClick={toggleEcoCanopy}
+                className={`flex items-center gap-1 px-2 py-1.5 border pixel-font text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[36px] ${
+                  profile.preferences?.ecoCanopyMode
+                    ? 'border-emerald-400 bg-emerald-950/70 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.3)] font-bold'
+                    : 'border-green-800/70 bg-[#061406] text-green-400 hover:border-green-500 hover:text-green-200'
+                }`}
+                title={profile.preferences?.ecoCanopyMode ? "Eco Canopy Active (2D mode). Tap to switch to 3D Voxel." : "3D Voxel Active. Tap to switch to 2D Eco Canopy."}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${profile.preferences?.ecoCanopyMode ? 'bg-emerald-400' : 'bg-green-500'}`} />
+                <span>
+                  {profile.preferences?.ecoCanopyMode ? 'ECO' : '3D'}
+                  <span className="hidden xs:inline">{profile.preferences?.ecoCanopyMode ? ' (2D)' : ' VOXEL'}</span>
+                </span>
+              </button>
+
+              {/* User Sign In / Sign Out */}
+              {user && !user.isAnonymous ? (
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="flex items-center gap-1 px-2 py-1.5 border border-zinc-700 bg-zinc-950/80 text-zinc-300 hover:text-red-300 hover:border-red-700 pixel-font text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[36px]"
+                  title="Sign out & purge private session data"
+                >
+                  <span>SIGN OUT</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center gap-1 px-2 py-1.5 border border-green-800/80 bg-[#061406] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[36px]"
+                  title="Sign in to save your grove to cloud"
+                >
+                  <span>SIGN IN</span>
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Bottom Tier (Mobile) / Right Section (Desktop) */}
+          <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 min-w-0 w-full sm:w-auto">
+            {/* On Mobile: Surface Button on the left of Bottom Row */}
+            <button
+              onClick={navigateToLanding}
+              className="flex sm:hidden items-center gap-1 px-2 py-1.5 border border-green-800/80 bg-[#061406] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[7.5px] uppercase tracking-wider transition-all shrink-0 shadow-sm min-h-[36px]"
+              title="Return to Public Website / Manifesto"
+            >
+              <span>← SURFACE</span>
+            </button>
+
+            {/* On Desktop: Controls (Eco Toggle & Sign In) */}
+            <div className="hidden sm:flex items-center gap-2 sm:gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={toggleEcoCanopy}
+                className={`flex items-center gap-1 px-2.5 py-1.5 border pixel-font text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[36px] ${
+                  profile.preferences?.ecoCanopyMode
+                    ? 'border-emerald-400 bg-emerald-950/70 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.3)] font-bold'
+                    : 'border-green-800/70 bg-[#061406] text-green-400 hover:border-green-500 hover:text-green-200'
+                }`}
+                title={profile.preferences?.ecoCanopyMode ? "Eco Canopy Active (2D low-power mode). Click to switch to 3D Voxel." : "3D Voxel Active. Click to switch to 2D Eco Canopy for Chromebooks/battery saving."}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${profile.preferences?.ecoCanopyMode ? 'bg-emerald-400' : 'bg-green-500'}`} />
+                <span>{profile.preferences?.ecoCanopyMode ? 'ECO (2D)' : '3D VOXEL'}</span>
+              </button>
+
+              {user && !user.isAnonymous ? (
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="flex items-center gap-1 px-2.5 py-1.5 border border-zinc-700 bg-zinc-950/80 text-zinc-300 hover:text-red-300 hover:border-red-700 pixel-font text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[36px]"
+                  title="Sign out & purge private session data from this computer"
+                >
+                  <span>SIGN OUT</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 border border-green-800/80 bg-[#061406] text-green-300 hover:text-white hover:border-green-400 pixel-font text-[7.5px] uppercase tracking-wider transition-all shrink-0 min-h-[36px]"
+                  title="Sign in to save your grove to cloud"
+                >
+                  <span>SIGN IN</span>
+                </button>
+              )}
+            </div>
+
+            {/* Total Focus Counter with tabular-nums: Both Mobile and Desktop */}
+            <div className="text-right flex flex-row sm:flex-col items-center sm:items-end gap-1 sm:gap-0 shrink-0">
+              <span className="pixel-font text-[6.5px] sm:text-[7px] text-green-400/90 uppercase tracking-wider font-bold whitespace-nowrap">
+                <span className="hidden xs:inline">TOTAL </span>FOCUS:
+              </span>
+              <span className="pixel-font text-xs sm:text-base md:text-lg text-green-300 font-bold tracking-tight whitespace-nowrap tabular-nums">
+                {Math.floor(profile.totalFocusTime / 60)}H {Math.round(profile.totalFocusTime % 60)}M
+              </span>
+            </div>
+          </div>
+
         </div>
       </header>
 
       <main 
         id="main-content" 
         className={`flex-1 min-h-0 ${activeTab === 'ani' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}
-        style={{ paddingBottom: navHeight ? `${navHeight}px` : 'var(--bottom-nav-height)' }}
       >
         {activeTab === 'grove' && renderGrove()}
         {activeTab === 'tasks' && renderTasks()}
@@ -1177,7 +1237,7 @@ const SaplingAppContent: React.FC = () => {
       <nav 
         ref={navRef}
         aria-label="Main navigation" 
-        className="fixed bottom-0 left-0 right-0 max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto bg-[#040a04]/98 backdrop-blur-md border-t-2 border-green-900/40 px-1.5 py-1.5 xs:p-2 sm:p-3 md:p-4 grid grid-cols-4 gap-1 sm:gap-2 z-[60] pb-safe"
+        className="shrink-0 z-[60] border-t-2 border-green-900/50 bg-[#040a04] px-1.5 py-1.5 xs:p-2 sm:p-2.5 md:p-3 grid grid-cols-4 gap-1 sm:gap-2 pb-safe shadow-[0_-10px_25px_rgba(0,0,0,0.8)]"
       >
         {[
           { id: 'grove', label: 'GROVE', icon: <path d="M7 14l5-5 5 5M12 9v12 M5 5h14v14H5z" stroke="currentColor" fill="none" strokeWidth="2.5" strokeLinecap="round" /> },
