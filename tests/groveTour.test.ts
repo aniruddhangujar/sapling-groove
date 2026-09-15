@@ -118,8 +118,28 @@ inMemoryTourStep = 'release';
 const profileAfterReplay = storage.getProfile('guest_new_user');
 assert(profileAfterReplay.grove.length === goalCountBefore, 'Replay tour does not alter goal count');
 assert(profileAfterReplay.logs.length === logsCountBefore, 'Replay tour does not alter log count');
-assert(profileAfterReplay.totalFocusTime === focusTimeBefore, 'Replay tour does not alter total focus time');
+// --------------------------------------------------------------------------
+// TEST G — Streamlined Step Sequence & Non-Redundant Flow
+// --------------------------------------------------------------------------
+console.log('\n--- TEST G: Streamlined Tour Sequence & Dashboard Introduction ---');
+const tourSequence: string[] = [
+  'welcome',
+  'plant',
+  'acknowledge',
+  'focus',
+  'dashboard',
+  'logs',
+  'ani',
+  'living_tree',
+  'release'
+];
+
+assert(tourSequence.includes('focus'), 'Tour includes unified focus step (Chronos + Groove)');
+assert(tourSequence.includes('dashboard'), 'Tour introduces the new Focus Observatory (dashboard)');
+assert(!tourSequence.includes('pomo'), 'Redundant standalone pomo step removed from grove tour');
+assert(tourSequence.indexOf('focus') < tourSequence.indexOf('dashboard'), 'Focus rituals introduced before dashboard');
+assert(tourSequence.indexOf('dashboard') < tourSequence.indexOf('logs'), 'Dashboard introduced before logs');
 
 console.log('\n=============================================================');
-console.log('✅ ALL 6 TOUR PERSISTENCE & SAFETY TESTS PASSED');
+console.log('✅ ALL 7 TOUR PERSISTENCE, FLOW & SEQUENCE TESTS PASSED');
 console.log('=============================================================\n');

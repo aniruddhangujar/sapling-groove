@@ -843,7 +843,7 @@ const SaplingAppContent: React.FC = () => {
                 </div>
 
                 {/* Primary Cultivation Actions */}
-                <div className="flex flex-row items-center justify-center gap-1.5 xs:gap-2 pt-1 w-full max-w-full">
+                <div data-tour="focus-actions" className="flex flex-row items-center justify-center gap-1.5 xs:gap-2 pt-1 w-full max-w-full">
                   <PixelButton 
                     data-tour="groove-btn"
                     variant="success"
@@ -1442,9 +1442,10 @@ const SaplingAppContent: React.FC = () => {
               startUtilityRitual();
             }
           }}
-          onTryPomo={() => handleTabChange('tasks')}
+          onTryDashboard={() => handleTabChange('dashboard')}
           onTryLogs={() => handleTabChange('logs')}
           onTryAni={() => handleTabChange('ani')}
+          onTryPomo={() => handleTabChange('tasks')}
           hasActiveGoal={Boolean(currentGroveGoal)}
         />
       )}

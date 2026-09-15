@@ -5,13 +5,16 @@ export type TourStepId =
   | 'welcome'
   | 'plant'
   | 'acknowledge'
-  | 'chronos'
-  | 'groove'
-  | 'pomo'
+  | 'focus'
+  | 'dashboard'
   | 'logs'
   | 'ani'
   | 'living_tree'
-  | 'release';
+  | 'release'
+  // Backward compatibility aliases
+  | 'chronos'
+  | 'groove'
+  | 'pomo';
 
 interface GroveTourProps {
   currentStep: TourStepId;
@@ -21,9 +24,10 @@ interface GroveTourProps {
   onOpenGoalModal: () => void;
   onTryChronos: () => void;
   onTryGroove: () => void;
-  onTryPomo: () => void;
+  onTryDashboard: () => void;
   onTryLogs: () => void;
   onTryAni: () => void;
+  onTryPomo?: () => void;
   hasActiveGoal: boolean;
 }
 
@@ -44,9 +48,10 @@ export const GroveTour: React.FC<GroveTourProps> = ({
   onOpenGoalModal,
   onTryChronos,
   onTryGroove,
-  onTryPomo,
+  onTryDashboard,
   onTryLogs,
   onTryAni,
+  onTryPomo,
   hasActiveGoal
 }) => {
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
@@ -60,16 +65,18 @@ export const GroveTour: React.FC<GroveTourProps> = ({
       case 'acknowledge':
       case 'living_tree':
         return '[data-tour="hero-tree"]';
+      case 'focus':
       case 'chronos':
-        return '[data-tour="chronos-btn"]';
       case 'groove':
-        return '[data-tour="groove-btn"]';
-      case 'pomo':
-        return '[data-tour="nav-pomo"]';
+        return '[data-tour="focus-actions"]';
+      case 'dashboard':
+        return '[data-tour="nav-dashboard"]';
       case 'logs':
         return '[data-tour="nav-logs"]';
       case 'ani':
         return '[data-tour="nav-ani"]';
+      case 'pomo':
+        return '[data-tour="nav-pomo"]';
       case 'welcome':
       case 'release':
       default:
@@ -294,7 +301,7 @@ export const GroveTour: React.FC<GroveTourProps> = ({
             <div className="pt-2 flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => onStepChange('chronos')}
+                onClick={() => onStepChange('focus')}
                 className="pixel-font text-[7px] sm:text-[8px] text-zinc-400 hover:text-white uppercase tracking-wider cursor-pointer p-2 min-h-[44px]"
               >
                 NEXT →
@@ -326,7 +333,7 @@ export const GroveTour: React.FC<GroveTourProps> = ({
             <div className="pt-2 flex justify-end">
               <PixelButton
                 variant="success"
-                onClick={() => onStepChange('chronos')}
+                onClick={() => onStepChange('focus')}
                 className="py-2 px-4 text-[7.5px] sm:text-[8px] tracking-wider uppercase font-bold min-h-[44px]"
               >
                 [ CONTINUE → ]
@@ -335,76 +342,55 @@ export const GroveTour: React.FC<GroveTourProps> = ({
           </div>
         )}
 
-        {currentStep === 'chronos' && (
+        {(currentStep === 'focus' || currentStep === 'chronos' || currentStep === 'groove') && (
           <div className="space-y-2.5">
             <h3 className="pixel-font text-xs xs:text-sm sm:text-base text-green-300 font-bold uppercase tracking-wide">
-              NEED STRUCTURE?
+              FOCUS RITUALS // CHRONOS & GROOVE
             </h3>
             <p className="font-editorial text-xs sm:text-sm text-zinc-200 leading-relaxed">
-              "Try CHRONOS. Set a focus duration and let the Grove keep time for you."
+              "When you're ready to focus, choose your ritual container."
             </p>
             <p className="text-[10px] sm:text-xs text-green-400/80 font-mono leading-normal">
-              A timed countdown ritual with tranquil audio synthesizers and clean completion milestones.
+              CHRONOS provides structured countdowns with tranquil soundscapes. GROOVE offers open-ended stopwatch focus without timer pressure.
             </p>
-            <div className="pt-2 flex items-center justify-between gap-2">
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => onStepChange('groove')}
+                onClick={() => onStepChange('dashboard')}
                 className="pixel-font text-[7px] sm:text-[8px] text-zinc-400 hover:text-white uppercase tracking-wider cursor-pointer p-2 min-h-[44px]"
               >
                 NEXT →
               </button>
-              <PixelButton
-                variant="primary"
-                onClick={onTryChronos}
-                className="py-2 px-3 text-[7.5px] sm:text-[8px] tracking-wider uppercase font-bold min-h-[44px]"
-              >
-                [ TRY CHRONOS ]
-              </PixelButton>
+              <div className="flex items-center gap-1.5">
+                <PixelButton
+                  variant="primary"
+                  onClick={onTryChronos}
+                  className="py-2 px-2.5 sm:px-3 text-[7px] sm:text-[7.5px] tracking-wider uppercase font-bold min-h-[44px]"
+                >
+                  [ TRY CHRONOS ]
+                </PixelButton>
+                <PixelButton
+                  variant="success"
+                  onClick={onTryGroove}
+                  className="py-2 px-2.5 sm:px-3 text-[7px] sm:text-[7.5px] tracking-wider uppercase font-bold min-h-[44px]"
+                >
+                  [ TRY GROOVE ]
+                </PixelButton>
+              </div>
             </div>
           </div>
         )}
 
-        {currentStep === 'groove' && (
+        {(currentStep === 'dashboard' || currentStep === 'pomo') && (
           <div className="space-y-2.5">
             <h3 className="pixel-font text-xs xs:text-sm sm:text-base text-green-300 font-bold uppercase tracking-wide">
-              OR FORGET THE CLOCK.
+              FOCUS OBSERVATORY // DASHBOARD
             </h3>
             <p className="font-editorial text-xs sm:text-sm text-zinc-200 leading-relaxed">
-              "GROOVE is for when you just want to start focusing and see where your attention takes you."
+              "DASHBOARD is your personal observatory."
             </p>
             <p className="text-[10px] sm:text-xs text-green-400/80 font-mono leading-normal">
-              Free-form stopwatch focus without artificial timers or countdown pressure.
-            </p>
-            <div className="pt-2 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => onStepChange('pomo')}
-                className="pixel-font text-[7px] sm:text-[8px] text-zinc-400 hover:text-white uppercase tracking-wider cursor-pointer p-2 min-h-[44px]"
-              >
-                NEXT →
-              </button>
-              <PixelButton
-                variant="success"
-                onClick={onTryGroove}
-                className="py-2 px-3 text-[7.5px] sm:text-[8px] tracking-wider uppercase font-bold min-h-[44px]"
-              >
-                [ TRY GROOVE ]
-              </PixelButton>
-            </div>
-          </div>
-        )}
-
-        {currentStep === 'pomo' && (
-          <div className="space-y-2.5">
-            <h3 className="pixel-font text-xs xs:text-sm sm:text-base text-green-300 font-bold uppercase tracking-wide">
-              PREFER A RHYTHM?
-            </h3>
-            <p className="font-editorial text-xs sm:text-sm text-zinc-200 leading-relaxed">
-              "POMO gives you a familiar focus → break cycle."
-            </p>
-            <p className="text-[10px] sm:text-xs text-green-400/80 font-mono leading-normal">
-              25m focus sprints with 5m restoration pauses, paired with tree cultivation.
+              Track your daily focus rhythm, botanical attention heatmap, and grove health over time — without streaks or corporate gamification.
             </p>
             <div className="pt-2 flex items-center justify-between gap-2">
               <button
@@ -416,10 +402,10 @@ export const GroveTour: React.FC<GroveTourProps> = ({
               </button>
               <PixelButton
                 variant="primary"
-                onClick={onTryPomo}
+                onClick={onTryDashboard}
                 className="py-2 px-3 text-[7.5px] sm:text-[8px] tracking-wider uppercase font-bold min-h-[44px]"
               >
-                [ EXPLORE POMO ]
+                [ OPEN DASHBOARD ]
               </PixelButton>
             </div>
           </div>
