@@ -137,7 +137,7 @@ export interface ChatMessage {
   actionExecuted?: boolean;
 }
 
-export type AppTab = 'grove' | 'logs' | 'tasks' | 'ani';
+export type AppTab = 'grove' | 'logs' | 'tasks' | 'dashboard' | 'ani';
 
 export type FocusMode = 'chronos' | 'groove';
 

@@ -15,6 +15,7 @@ const FocusSession = lazy(() => import('./components/FocusSession'));
 const AniChat = lazy(() => import('./components/AniChat'));
 const SanctuaryModal = lazy(() => import('./components/SanctuaryModal'));
 const AuthModal = lazy(() => import('./components/AuthModal'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
 import GroveTour, { TourStepId } from './components/GroveTour';
 
 const SaplingLogo: React.FC = () => (
@@ -36,6 +37,7 @@ const parseTabFromHash = (rawHash: string): AppTab | null => {
   if (target === 'pomo' || target === 'tasks' || target === 'timer') return 'tasks';
   if (target === 'logs' || target === 'history') return 'logs';
   if (target === 'ani' || target === 'chat' || target === 'assistant') return 'ani';
+  if (target === 'dashboard' || target === 'stats' || target === 'observatory') return 'dashboard';
   if (target === 'grove' || target === 'trees') return 'grove';
   return null;
 };
@@ -44,7 +46,7 @@ const parseViewMode = (rawHash: string): AppViewMode => {
   if (!rawHash) return 'landing';
   const clean = rawHash.replace(/^#\/?/, '').toLowerCase().trim();
   const segment = clean.split('?')[0].split('/')[0];
-  if (['app', 'grove', 'pomo', 'tasks', 'logs', 'ani'].includes(segment)) {
+  if (['app', 'grove', 'pomo', 'tasks', 'logs', 'dashboard', 'ani'].includes(segment)) {
     return 'app';
   }
   return 'landing';
@@ -90,7 +92,7 @@ const SaplingAppContent: React.FC = () => {
       if (fromHash) return fromHash;
       try {
         const stored = localStorage.getItem('sapling_last_tab') as AppTab | null;
-        if (stored && ['grove', 'tasks', 'logs', 'ani'].includes(stored)) {
+        if (stored && ['grove', 'tasks', 'logs', 'dashboard', 'ani'].includes(stored)) {
           return stored;
         }
       } catch {}
@@ -1133,6 +1135,32 @@ const SaplingAppContent: React.FC = () => {
     );
   };
 
+  const renderDashboard = () => (
+    <Suspense fallback={
+      <div className="p-8 sm:p-14 text-center border-2 border-green-950/60 bg-[#061206]/50 max-w-md mx-auto my-12 animate-pulse">
+        <span className="w-2 h-2 inline-block bg-emerald-400 mr-2 animate-ping" />
+        <span className="pixel-font text-[9px] text-emerald-400 uppercase tracking-widest font-bold">
+          SYNCHRONIZING OBSERVATORY...
+        </span>
+      </div>
+    }>
+      <Dashboard
+        profile={profile}
+        onStartFocus={(goalId, mode) => {
+          if (goalId) {
+            const matched = profile.grove.find(g => g.id === goalId);
+            if (matched) {
+              startGoalRitual(matched, mode || 'chronos', 25);
+              return;
+            }
+          }
+          startUtilityRitual(25);
+        }}
+        onNavigateTab={handleTabChange}
+      />
+    </Suspense>
+  );
+
   return (
     <div className="h-screen h-[100dvh] flex flex-col max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto border-x-2 border-green-950/30 bg-[#040a04] relative shadow-2xl overflow-hidden">
       <header className="px-3 py-2 sm:px-6 sm:py-4 md:px-8 md:py-5 border-b-2 border-green-950/20 bg-[#040a04]/95 backdrop-blur-md sticky top-0 z-[60] pt-safe shrink-0">
@@ -1269,6 +1297,7 @@ const SaplingAppContent: React.FC = () => {
         {activeTab === 'grove' && renderGrove()}
         {activeTab === 'tasks' && renderTasks()}
         {activeTab === 'logs' && renderLogs()}
+        {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'ani' && (
           <Suspense fallback={
             <div className="p-8 sm:p-14 text-center border-2 border-green-950/60 bg-[#061206]/50 max-w-md mx-auto my-12 animate-pulse">
@@ -1310,12 +1339,24 @@ const SaplingAppContent: React.FC = () => {
       <nav 
         ref={navRef}
         aria-label="Main navigation" 
-        className="shrink-0 z-[60] border-t-2 border-green-900/50 bg-[#040a04] px-1.5 py-1.5 xs:p-2 sm:p-2.5 md:p-3 grid grid-cols-4 gap-1 sm:gap-2 pb-safe shadow-[0_-10px_25px_rgba(0,0,0,0.8)]"
+        className="shrink-0 z-[60] border-t-2 border-green-900/50 bg-[#040a04] px-1 py-1 xs:p-2 sm:p-2.5 md:p-3 grid grid-cols-5 gap-0.5 xs:gap-1 sm:gap-2 pb-safe shadow-[0_-10px_25px_rgba(0,0,0,0.8)]"
       >
         {[
           { id: 'grove', label: 'GROVE', icon: <path d="M7 14l5-5 5 5M12 9v12 M5 5h14v14H5z" stroke="currentColor" fill="none" strokeWidth="2.5" strokeLinecap="round" /> },
           { id: 'tasks', label: 'POMO', icon: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor" /> },
           { id: 'logs', label: 'LOGS', icon: <rect x="6" y="6" width="12" height="12" fill="currentColor" /> },
+          { 
+            id: 'dashboard', 
+            label: 'DASH', 
+            fullLabel: 'DASHBOARD', 
+            icon: (
+              <g fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <circle cx="12" cy="12" r="7.5" />
+                <circle cx="12" cy="12" r="3" fill="currentColor" />
+                <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" />
+              </g>
+            )
+          },
           { id: 'ani', label: 'ANI', icon: <g fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></g> }
         ].map((tab) => {
           const isActive = activeTab === tab.id;
@@ -1328,19 +1369,20 @@ const SaplingAppContent: React.FC = () => {
               aria-current={isActive ? 'page' : undefined}
               className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 py-1 sm:py-2 transition-all duration-200 min-h-[44px] group cursor-pointer select-none active:scale-[0.97]"
             >
-              <div className={`w-8 h-8 xs:w-9 xs:h-9 sm:w-11 sm:h-11 flex items-center justify-center border-2 transition-all ${
+              <div className={`w-7 h-7 xs:w-8 xs:h-8 sm:w-11 sm:h-11 flex items-center justify-center border-2 transition-all ${
                 isActive 
                   ? 'border-green-400 text-green-300 shadow-[0_0_20px_rgba(34,197,94,0.35)] bg-green-500/20' 
                   : 'border-green-800/70 bg-[#061406] text-green-400 group-hover:text-green-200 group-hover:border-green-600 shadow-sm'
               }`}>
-                <svg width="15" height="15" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24">
+                <svg width="14" height="14" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24">
                   {tab.icon}
                 </svg>
               </div>
-              <span className={`pixel-font text-[6.5px] xs:text-[7.5px] sm:text-[8px] tracking-wider xs:tracking-widest font-bold transition-colors ${
+              <span className={`pixel-font text-[6px] xs:text-[7px] sm:text-[8px] tracking-tight xs:tracking-wider sm:tracking-widest font-bold transition-colors ${
                 isActive ? 'text-green-300' : 'text-green-400 group-hover:text-green-200'
               }`}>
-                {tab.label}
+                <span className="sm:hidden">{tab.label}</span>
+                <span className="hidden sm:inline">{tab.fullLabel || tab.label}</span>
               </span>
             </button>
           );
