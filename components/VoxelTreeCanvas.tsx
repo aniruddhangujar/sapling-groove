@@ -88,10 +88,12 @@ const VoxelTreeCanvas: React.FC<Props> = ({
       powerPreference: 'high-performance'
     });
     renderer.setClearColor(0x000000, 0);
+    const initialPixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setPixelRatio(initialPixelRatio);
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
+    renderer.domElement.style.display = 'block';
     mount.appendChild(renderer.domElement);
 
     const untrackWebGL = trackWebGLRenderer(`VoxelTreeCanvas-${goal.type}`);
@@ -188,16 +190,25 @@ const VoxelTreeCanvas: React.FC<Props> = ({
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
     window.addEventListener('touchend', handleTouchEnd);
 
-    // Window Resize Handler
-    const handleResize = () => {
-      if (!mount) return;
-      const w = mount.clientWidth;
-      const h = mount.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener('resize', handleResize);
+    // Container ResizeObserver Handler
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const rawW = entry.contentRect.width;
+        const rawH = entry.contentRect.height;
+        const w = Math.floor(rawW);
+        const h = Math.floor(rawH);
+        if (w <= 0 || h <= 0) return;
+
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        const pr = Math.min(window.devicePixelRatio || 1, 2);
+        if (renderer.getPixelRatio() !== pr) {
+          renderer.setPixelRatio(pr);
+        }
+        renderer.setSize(w, h);
+      }
+    });
+    resizeObserver.observe(mount);
 
     // Visibility and Intersection Observers (0% CPU offscreen)
     const handleVisibility = () => {
@@ -217,7 +228,9 @@ const VoxelTreeCanvas: React.FC<Props> = ({
 
     // Static single render if user requested reduced motion
     if (prefersReducedMotion || !animate) {
-      renderer.render(scene, camera);
+      if (renderer.domElement.width > 0 && renderer.domElement.height > 0) {
+        renderer.render(scene, camera);
+      }
       return () => {
         mount.removeEventListener('mousedown', handleMouseDown);
         window.removeEventListener('mousemove', handleMouseMove);
@@ -225,7 +238,7 @@ const VoxelTreeCanvas: React.FC<Props> = ({
         mount.removeEventListener('touchstart', handleTouchStart);
         window.removeEventListener('touchmove', handleTouchMove);
         window.removeEventListener('touchend', handleTouchEnd);
-        window.removeEventListener('resize', handleResize);
+        resizeObserver.disconnect();
         document.removeEventListener('visibilitychange', handleVisibility);
         observer.disconnect();
 
@@ -242,13 +255,14 @@ const VoxelTreeCanvas: React.FC<Props> = ({
 
     // Smooth Animation Loop
     let animId: number;
-    let clock = new THREE.Clock();
+    const startTime = performance.now();
 
     const renderLoop = () => {
       animId = requestAnimationFrame(renderLoop);
       if (!isVisibleRef.current) return;
+      if (renderer.domElement.width <= 0 || renderer.domElement.height <= 0) return;
 
-      const elapsed = clock.getElapsedTime();
+      const elapsed = (performance.now() - startTime) * 0.001;
 
       // Smooth camera/tree orientation lerp
       mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.06;
@@ -276,7 +290,7 @@ const VoxelTreeCanvas: React.FC<Props> = ({
       mount.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       document.removeEventListener('visibilitychange', handleVisibility);
       observer.disconnect();
 

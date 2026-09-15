@@ -116,10 +116,12 @@ const CyberBotanicalWorld: React.FC<Props> = ({
       powerPreference: 'high-performance'
     });
     renderer.setClearColor(0x000000, 0);
+    const initialPixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setPixelRatio(initialPixelRatio);
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.25;
+    renderer.domElement.style.display = 'block';
     mount.appendChild(renderer.domElement);
 
     // Track WebGLRenderer creation/disposal
@@ -411,16 +413,25 @@ const CyberBotanicalWorld: React.FC<Props> = ({
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
     window.addEventListener('touchend', handleTouchEnd);
 
-    // Resize Handler
-    const handleResize = () => {
-      if (!mount) return;
-      const w = mount.clientWidth;
-      const h = mount.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener('resize', handleResize);
+    // Container ResizeObserver Handler
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const rawW = entry.contentRect.width;
+        const rawH = entry.contentRect.height;
+        const w = Math.floor(rawW);
+        const h = Math.floor(rawH);
+        if (w <= 0 || h <= 0) return;
+
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        const pr = Math.min(window.devicePixelRatio || 1, 2);
+        if (renderer.getPixelRatio() !== pr) {
+          renderer.setPixelRatio(pr);
+        }
+        renderer.setSize(w, h);
+      }
+    });
+    resizeObserver.observe(mount);
 
     const handleVisibility = () => {
       isVisibleRef.current = !document.hidden;
@@ -439,7 +450,9 @@ const CyberBotanicalWorld: React.FC<Props> = ({
 
     // Static single render if reduced motion
     if (prefersReducedMotion) {
-      renderer.render(scene, camera);
+      if (renderer.domElement.width > 0 && renderer.domElement.height > 0) {
+        renderer.render(scene, camera);
+      }
       return () => {
         mount.removeEventListener('mousedown', handleMouseDown);
         window.removeEventListener('mousemove', handleMouseMove);
@@ -447,7 +460,7 @@ const CyberBotanicalWorld: React.FC<Props> = ({
         mount.removeEventListener('touchstart', handleTouchStart);
         window.removeEventListener('touchmove', handleTouchMove);
         window.removeEventListener('touchend', handleTouchEnd);
-        window.removeEventListener('resize', handleResize);
+        resizeObserver.disconnect();
         document.removeEventListener('visibilitychange', handleVisibility);
         observer.disconnect();
 
@@ -467,15 +480,16 @@ const CyberBotanicalWorld: React.FC<Props> = ({
 
     // Animation Loop
     let animId: number;
-    let clock = new THREE.Clock();
+    const startTime = performance.now();
     let hasReportedReady = false;
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
       if (!isVisibleRef.current) return;
+      if (renderer.domElement.width <= 0 || renderer.domElement.height <= 0) return;
 
-      const elapsedTime = clock.getElapsedTime();
+      const elapsedTime = (performance.now() - startTime) * 0.001;
 
       // Smooth pointer parallax easing
       mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.045;
@@ -538,7 +552,7 @@ const CyberBotanicalWorld: React.FC<Props> = ({
       mount.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       document.removeEventListener('visibilitychange', handleVisibility);
       observer.disconnect();
 

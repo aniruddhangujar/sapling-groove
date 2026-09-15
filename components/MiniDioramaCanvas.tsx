@@ -863,7 +863,7 @@ class SharedDioramaManager {
   private scenes: Map<InstrumentId, DioramaSceneData> = new Map();
   private subscribers: Map<InstrumentId, SubscriberData> = new Map();
   private animId: number | null = null;
-  private clock = new THREE.Clock();
+  private startTime = performance.now();
   private untrackWebGL: (() => void) | null = null;
 
   register(
@@ -946,7 +946,7 @@ class SharedDioramaManager {
       this.animId = requestAnimationFrame(loop);
       if (this.subscribers.size === 0 || !this.renderer) return;
 
-      const time = this.clock.getElapsedTime();
+      const time = (performance.now() - this.startTime) * 0.001;
 
       for (const [id, sub] of this.subscribers.entries()) {
         if (!sub.isVisible) continue;
