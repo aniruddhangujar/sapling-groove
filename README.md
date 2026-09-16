@@ -4,6 +4,8 @@
 
 Sapling Groove transforms your daily attention into living, procedural botanical monuments. Built for deep focus sessions, study rituals, and habit cultivation without digital noise, ads, or attention traps.
 
+> **Portfolio Notice**: This repository is maintained as a portfolio project. Unauthorized redistribution or reuse of the source code is not permitted.
+
 ---
 
 ## 🏛️ Core Features
@@ -93,4 +95,11 @@ npm run build
 ---
 
 ## 📜 License
-MIT © Aniruddha Gujar
+
+Copyright © 2026 Aniruddha Gujar. All rights reserved.
+
+Sapling Groove is publicly viewable for portfolio, educational, and evaluation purposes, but the source code is not released under a permissive open-source license.
+
+No permission is granted to reproduce, redistribute, repackage, resell, commercially deploy, or create derivative products from this source code without explicit permission from the copyright holder.
+
+Sapling Groove and its product/interface names are part of the project's branding and are not licensed for reuse as another product's branding.

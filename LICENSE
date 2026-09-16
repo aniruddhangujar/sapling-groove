@@ -1,0 +1,26 @@
+Copyright (c) 2026 Aniruddha Gujar. All rights reserved.
+
+Sapling Groove is a proprietary software application and design system developed and maintained by Aniruddha Gujar as a personal portfolio and creative showcase.
+
+1. PUBLIC PORTFOLIO & EVALUATION ACCESS:
+   This repository is hosted publicly on GitHub for portfolio demonstration, educational review, technical evaluation, and personal study. Viewing the source code, cloning the repository, or inspecting its architecture does not convey any license, title, or interest in or to the software.
+
+2. RESTRICTIONS ON REUSE & REDISTRIBUTION:
+   Except as expressly permitted by applicable law (such as fair use for personal study), you may NOT:
+   a. Reproduce, distribute, publish, sublicense, loan, or lease the source code or binary builds.
+   b. Repackage, rebrand, resell, or publicly host derivative versions of this application.
+   c. Deploy this software or significant parts thereof as a commercial product, SaaS offering, or public service.
+   d. Claim authorship, ownership, or affiliation with the creator without express written consent.
+
+3. BRANDING & TRADEMARK-LIKE ELEMENTS:
+   "Sapling Groove" and its distinctive product features and interface designations—including "Grove", "Chronos", "Groove", "Ani", "Sanctuary", and "Observatory"—are part of the project's original identity and branding. They are not licensed for reuse as another product's branding, marketing, or naming.
+
+4. CREATIVE ASSETS & ORIGINAL DESIGNS:
+   All original procedural voxel tree algorithms, 3D procedural rendering logic, custom botanical illustrations, cards, icons, synthesized soundscape engines, and conversational architectures are proprietary creative works. No permission is granted to extract or repurpose these assets for external projects.
+
+5. THIRD-PARTY DEPENDENCIES & FONTS:
+   Open-source dependencies (e.g., React, Three.js, Tailwind CSS) and open-source fonts (Orbitron, Press Start 2P, Space Mono, VT323) utilized by this application remain subject to their respective open-source licenses.
+
+6. PERMISSIONS & INQUIRIES:
+   For questions regarding permissions, evaluation, licensing, or portfolio inquiries, please contact:
+   https://github.com/aniruddhangujar
