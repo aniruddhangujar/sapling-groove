@@ -1,5 +1,5 @@
 // Sapling Service Worker — Mindful Offline & Shell Caching
-const CACHE_NAME = 'sapling-groove-v1';
+const CACHE_NAME = 'sapling-groove-v2';
 
 const STATIC_PRECACHE = [
   '/',
@@ -41,14 +41,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Bypass API routes and external cloud/auth services (Firebase, Gemini, Google APIs)
-  if (
-    url.pathname.startsWith('/api/') ||
-    url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('firebaseio.com') ||
-    url.hostname.includes('identitytoolkit') ||
-    url.hostname.includes('openrouter.ai')
-  ) {
+  // Strictly bypass all cross-origin requests unless they are Google Fonts
+  // This guarantees OAuth (apis.google.com, accounts.google.com, *.firebaseapp.com)
+  // and cloud APIs are handled natively by the browser network stack without SW interception.
+  const isSameOrigin = url.origin === self.location.origin;
+  const isGoogleFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
+
+  if (!isSameOrigin && !isGoogleFont) {
+    return;
+  }
+
+  // Bypass local API routes
+  if (url.pathname.startsWith('/api/')) {
     return;
   }
 
@@ -72,7 +76,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       const fetchPromise = fetch(request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+        if (networkResponse && networkResponse.status === 200 && (networkResponse.type === 'basic' || networkResponse.type === 'cors')) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseToCache);

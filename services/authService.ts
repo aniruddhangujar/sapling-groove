@@ -21,6 +21,7 @@ const AUTH_REDIRECT_MARKER = 'sapling_auth_redirect_in_progress';
 export class AuthService {
   private redirectError: string | null = null;
   private initPromise: Promise<User | null> | null = null;
+  private googleAuthInFlight: Promise<User | null> | null = null;
   private hasProcessedRedirect = false;
 
   /**
@@ -250,50 +251,61 @@ export class AuthService {
       );
     }
 
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = this.mapFirebaseUser(result.user);
-      this.saveUser(user);
-      return user;
-    } catch (err: any) {
-      const code = err?.code || '';
+    // Protect against duplicate concurrent popup requests
+    if (this.googleAuthInFlight) {
+      return this.googleAuthInFlight;
+    }
 
-      // If and ONLY IF popup fails specifically due to environment/popup restrictions:
-      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
-        // Only attempt redirect if production has verified redirect infrastructure (aligned authDomain)
-        if (this.isRedirectAuthSupported()) {
-          console.warn("[AuthService] Popup restricted; falling back to configured redirect auth.");
-          try {
-            if (typeof sessionStorage !== 'undefined') {
-              sessionStorage.setItem(AUTH_REDIRECT_MARKER, 'google');
-            }
-            await signInWithRedirect(auth, googleProvider);
-            return null;
-          } catch (redirectErr: any) {
+    this.googleAuthInFlight = (async () => {
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = this.mapFirebaseUser(result.user);
+        this.saveUser(user);
+        return user;
+      } catch (err: any) {
+        const code = err?.code || '';
+
+        // If and ONLY IF popup fails specifically due to environment/popup restrictions:
+        if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+          // Only attempt redirect if production has verified redirect infrastructure (aligned authDomain)
+          if (this.isRedirectAuthSupported()) {
+            console.warn("[AuthService] Popup restricted; falling back to configured redirect auth.");
             try {
               if (typeof sessionStorage !== 'undefined') {
-                sessionStorage.removeItem(AUTH_REDIRECT_MARKER);
+                sessionStorage.setItem(AUTH_REDIRECT_MARKER, 'google');
               }
-            } catch {}
-            throw new Error(this.formatAuthError(redirectErr));
+              await signInWithRedirect(auth, googleProvider);
+              return null;
+            } catch (redirectErr: any) {
+              try {
+                if (typeof sessionStorage !== 'undefined') {
+                  sessionStorage.removeItem(AUTH_REDIRECT_MARKER);
+                }
+              } catch {}
+              throw new Error(this.formatAuthError(redirectErr));
+            }
+          }
+
+          // If redirect infrastructure is not configured, show clear actionable instruction instructing the user to allow popups / retry
+          if (code === 'auth/popup-blocked') {
+            throw new Error(
+              'Your browser blocked the Google sign-in window. Please allow popups for this site and try again.'
+            );
+          } else {
+            throw new Error(
+              'Popup authentication is not supported or restricted in this browser environment. Please allow popups or open this site in a standard mobile browser (Chrome/Safari).'
+            );
           }
         }
 
-        // If redirect infrastructure is not configured, show clear actionable instruction instructing the user to allow popups / retry
-        if (code === 'auth/popup-blocked') {
-          throw new Error(
-            'Authentication popup was blocked by your browser. Please allow popups for this site in your browser settings and tap Sign In again.'
-          );
-        } else {
-          throw new Error(
-            'Popup authentication is not supported or restricted in this browser environment. Please allow popups or open this site in a standard mobile browser (Chrome/Safari).'
-          );
-        }
+        // For all other errors (unauthorized-domain, network failure, user cancellation, etc.), show error without redirecting
+        throw new Error(this.formatAuthError(err));
+      } finally {
+        this.googleAuthInFlight = null;
       }
+    })();
 
-      // For all other errors (unauthorized-domain, network failure, user cancellation, etc.), show error without redirecting
-      throw new Error(this.formatAuthError(err));
-    }
+    return this.googleAuthInFlight;
   }
 
   /**
@@ -431,56 +443,76 @@ export class AuthService {
    * Logs non-sensitive diagnostics to console while returning clear messages to UI
    */
   public formatAuthError(err: any): string {
-    const code = err?.code || '';
+    const code = typeof err?.code === 'string' ? err.code : '';
+    const message = typeof err?.message === 'string' ? err.message : '';
+    const name = typeof err?.name === 'string' ? err.name : 'AuthError';
 
-    // Safe diagnostic logging (never log credentials, tokens, or passwords)
+    // Safe diagnostic logging: strictly captures code, name, message, and non-sensitive appName
+    // NEVER logs access tokens, refresh tokens, passwords, API keys, or OAuth credentials
     if (typeof window !== 'undefined') {
       console.error("[Auth Diagnostic]", {
-        code,
-        message: err?.message
+        code: code || 'unknown_code',
+        name,
+        message: message || 'No error message provided',
+        appName: err?.customData?.appName,
+        tenantId: err?.customData?.tenantId
       });
     }
 
-    switch (code) {
-      case 'auth/internal-error':
-        return 'An internal authentication error occurred while communicating with the identity provider. Please verify your connection or try again.';
-      case 'auth/network-request-failed':
-        return 'Network communication failed. Please check your internet connection and retry.';
-      case 'auth/unauthorized-domain':
-        return 'Current domain is not authorized in Firebase Console > Authentication > Settings > Authorized domains.';
-      case 'auth/configuration-not-found':
-        return 'Authentication configuration not found for this project. Please check Firebase configuration.';
-      case 'auth/popup-blocked':
-        return 'Authentication popup was blocked by your browser. Please allow popups for this site in your browser settings and try again.';
-      case 'auth/operation-not-supported-in-this-environment':
-        return 'Popup authentication is restricted in this browser environment. Please allow popups or open this site in standard browser.';
-      case 'auth/popup-closed-by-user':
-        return 'Authentication window closed before completion.';
-      case 'auth/cancelled-popup-request':
-        return 'Authentication request cancelled.';
-      case 'auth/account-exists-with-different-credential':
-        return 'An account already exists with the same email using a different sign-in method.';
-      case 'auth/invalid-credential':
-      case 'auth/wrong-password':
-      case 'auth/user-not-found':
-        return 'Invalid email cipher or security key.';
-      case 'auth/email-already-in-use':
-        return 'A seed profile with this email address already exists.';
-      case 'auth/weak-password':
-        return 'Security key is too short. Must be at least 6 characters.';
-      case 'auth/invalid-email':
-        return 'Invalid email address format.';
-      case 'auth/too-many-requests':
-        return 'Access temporarily restricted due to repeated attempts. Please wait a moment.';
-      case 'auth/operation-not-allowed':
-        return 'This authentication provider is not enabled in your Firebase project console.';
-      default:
-        // Strip raw "Firebase: Error (...)" text for clean presentation
-        if (typeof err?.message === 'string' && err.message.startsWith('Firebase:')) {
-          return 'Authentication encountered an unexpected issue. Please try again.';
-        }
-        return err?.message || 'Authentication error encountered.';
+    if (code === 'auth/internal-error' || message.includes('auth/internal-error')) {
+      return 'Google could not complete the connection. Please try again.';
     }
+    if (code === 'auth/popup-blocked' || message.includes('popup-blocked')) {
+      return 'Your browser blocked the Google sign-in window. Please allow popups for this site and try again.';
+    }
+    if (
+      code === 'auth/cancelled-popup-request' ||
+      code === 'auth/popup-closed-by-user' ||
+      message.includes('popup-closed-by-user') ||
+      message.includes('cancelled-popup-request')
+    ) {
+      return 'Sign-in was cancelled before completion. Please try again.';
+    }
+    if (code === 'auth/operation-not-supported-in-this-environment' || message.includes('operation-not-supported')) {
+      return 'Popup authentication is restricted in this browser environment. Please allow popups or open this site in a standard mobile browser (Chrome/Safari).';
+    }
+    if (code === 'auth/network-request-failed' || message.includes('network-request-failed')) {
+      return 'Network communication failed. Please check your internet connection and retry.';
+    }
+    if (code === 'auth/unauthorized-domain' || message.includes('unauthorized-domain')) {
+      return 'Current domain is not authorized in Firebase Console > Authentication > Settings > Authorized domains.';
+    }
+    if (code === 'auth/configuration-not-found' || message.includes('configuration-not-found')) {
+      return 'Authentication configuration not found for this project. Please check Firebase configuration.';
+    }
+    if (code === 'auth/account-exists-with-different-credential') {
+      return 'An account already exists with the same email using a different sign-in method.';
+    }
+    if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+      return 'Invalid email cipher or security key.';
+    }
+    if (code === 'auth/email-already-in-use') {
+      return 'A seed profile with this email address already exists.';
+    }
+    if (code === 'auth/weak-password') {
+      return 'Security key is too short. Must be at least 6 characters.';
+    }
+    if (code === 'auth/invalid-email') {
+      return 'Invalid email address format.';
+    }
+    if (code === 'auth/too-many-requests') {
+      return 'Access temporarily restricted due to repeated attempts. Please wait a moment.';
+    }
+    if (code === 'auth/operation-not-allowed') {
+      return 'This authentication provider is not enabled in your Firebase project console.';
+    }
+
+    // Strip raw "Firebase: Error (...)" text for clean presentation
+    if (message.startsWith('Firebase:')) {
+      return 'Google could not complete the connection. Please try again.';
+    }
+
+    return message || 'Authentication encountered an unexpected issue. Please try again.';
   }
 }
 

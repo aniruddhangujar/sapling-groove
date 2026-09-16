@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PixelButton from './PixelButton';
 
@@ -31,6 +31,7 @@ const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const authInFlightRef = useRef(false);
 
   // Sync redirectError from context when modal opens or redirect fails
   useEffect(() => {
@@ -52,6 +53,9 @@ const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
   }, [isProcessing, onClose, clearRedirectError]);
 
   const handleGoogleAuth = async () => {
+    if (authInFlightRef.current) return;
+    authInFlightRef.current = true;
+
     setErrorMsg(null);
     clearRedirectError();
     setIsProcessing(true);
@@ -62,10 +66,11 @@ const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
       onSuccess?.();
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || 'Google authentication error.');
+      setErrorMsg(err.message || 'Google could not complete the connection. Please try again.');
       setStatusMsg(null);
     } finally {
       setIsProcessing(false);
+      authInFlightRef.current = false;
     }
   };
 
@@ -219,9 +224,40 @@ const AuthModal: React.FC<Props> = ({ onClose, onSuccess }) => {
 
         {/* Status / Error Diagnostic Telemetry */}
         {errorMsg && (
-          <div className="mb-4 p-2.5 bg-red-950/40 border border-red-900/80 text-left text-[8.5px] text-red-300 font-mono flex items-start gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-            <span className="text-red-400 font-bold">!</span>
-            <div className="flex-1 leading-snug">{errorMsg}</div>
+          <div className="mb-4 p-3 bg-red-950/60 border-2 border-red-800/80 text-left text-red-200 font-mono shadow-[0_0_20px_rgba(239,68,68,0.25)] flex flex-col gap-2">
+            <div className="flex items-center justify-between border-b border-red-900/60 pb-1.5">
+              <div className="flex items-center gap-2 text-[8px] sm:text-[8.5px] pixel-font uppercase tracking-wider text-red-400 font-bold">
+                <span className="w-2 h-2 bg-red-500 animate-pulse shadow-[0_0_6px_#ef4444]" />
+                AUTHENTICATION INTERRUPTED
+              </div>
+              <button
+                type="button"
+                onClick={() => { setErrorMsg(null); clearRedirectError(); }}
+                className="text-red-400 hover:text-red-200 text-xs px-1"
+                aria-label="Dismiss error"
+              >
+                ×
+              </button>
+            </div>
+            <div className="text-[9.5px] sm:text-[10px] leading-relaxed text-red-200/90 font-mono">
+              {errorMsg}
+            </div>
+            <div className="pt-1 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setErrorMsg(null);
+                  clearRedirectError();
+                  authInFlightRef.current = false;
+                  if (activeTab === 'oauth') {
+                    handleGoogleAuth();
+                  }
+                }}
+                className="px-3 py-1.5 bg-red-900/40 hover:bg-red-800/60 border border-red-500/80 text-red-200 pixel-font text-[7.5px] sm:text-[8px] tracking-wider uppercase font-bold transition-all press-tactile"
+              >
+                [ TRY AGAIN ]
+              </button>
+            </div>
           </div>
         )}
 
