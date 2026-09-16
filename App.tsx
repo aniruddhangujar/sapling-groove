@@ -1292,7 +1292,7 @@ const SaplingAppContent: React.FC = () => {
 
       <main 
         id="main-content" 
-        className={`flex-1 min-h-0 ${activeTab === 'ani' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}
+        className={`flex-1 min-h-0 ${activeTab === 'ani' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto pb-6 sm:pb-8'}`}
       >
         {activeTab === 'grove' && renderGrove()}
         {activeTab === 'tasks' && renderTasks()}
@@ -1335,11 +1335,11 @@ const SaplingAppContent: React.FC = () => {
         )}
       </main>
 
-      {/* BOTTOM NAVIGATION WITH CLEAR, CONTRAST-ENHANCED VISIBILITY */}
+      {/* BOTTOM NAVIGATION WITH CLEAR, CONTRAST-ENHANCED VISIBILITY & SAFE-AREA CLEARANCE */}
       <nav 
         ref={navRef}
         aria-label="Main navigation" 
-        className="shrink-0 z-[60] border-t-2 border-green-900/50 bg-[#040a04] px-1 py-1 xs:p-2 sm:p-2.5 md:p-3 grid grid-cols-5 gap-0.5 xs:gap-1 sm:gap-2 pb-safe shadow-[0_-10px_25px_rgba(0,0,0,0.8)]"
+        className="shrink-0 sticky bottom-0 z-[60] border-t-2 border-green-900/50 bg-[#040a04] px-1 pt-1.5 pb-safe-nav xs:px-2 xs:pt-2 sm:px-3 sm:py-2.5 md:px-4 md:py-3 grid grid-cols-5 gap-0.5 xs:gap-1 sm:gap-2 shadow-[0_-10px_25px_rgba(0,0,0,0.8)]"
       >
         {[
           { id: 'grove', label: 'GROVE', icon: <path d="M7 14l5-5 5 5M12 9v12 M5 5h14v14H5z" stroke="currentColor" fill="none" strokeWidth="2.5" strokeLinecap="round" /> },

@@ -261,10 +261,13 @@ p, .text-pretty {
 
 /* ===== SAFE AREA UTILITIES ===== */
 .pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+.pb-safe-nav {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
 }
 .pt-safe {
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: max(0.25rem, env(safe-area-inset-top, 0px));
 }
 
 /* ===== BOTANICAL LOADER SPORES ===== */
