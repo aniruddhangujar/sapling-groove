@@ -1,5 +1,27 @@
-# Logs
-logs
+# Dependencies
+node_modules/
+
+# Production build outputs
+dist/
+dist-ssr/
+build/
+
+# Test coverage & reports
+coverage/
+*.lcov
+
+# Environment configurations
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
+
+# Logs & debug files
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,21 +29,32 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-.env
-.env.*
-!.env.example
+# Credentials & Service Accounts (Prevent accidental commits)
+*.pem
+*.key
+*.crt
+*service-account*.json
+*serviceAccount*.json
+*firebase-admin*.json
+*credentials*.json
 
-# Editor directories and files
+# Editor, IDE, and tool-specific metadata
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
+.kiro/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Vercel deployment artifacts
+.vercel/
+
+# Operating System metadata & temporary artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.bak

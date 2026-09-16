@@ -170,14 +170,14 @@ export default async function handler(req: any, res: any) {
   // Check rate limit
   const clientIp = getClientIp(req);
   if (!checkRateLimit(clientIp)) {
-    console.warn(`[ANI API] Rate limit exceeded for IP: ${clientIp}`);
+    console.warn('[ANI API] Rate limit exceeded.');
     return res.status(429).json({
       error: 'The canopy is resting. Ani is processing too many seasonal winds. Please wait a few moments before breathing with Ani again.',
       status: 'rate_limited'
     });
   }
 
-  console.log(`[ANI API] Route reached via POST from ${clientIp}.`);
+  console.log('[ANI API] Route reached via POST.');
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
   console.log(`[ANI API] API key configured: ${apiKey ? 'YES' : 'NO'}`);

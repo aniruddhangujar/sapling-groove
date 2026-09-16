@@ -12,7 +12,7 @@ This repository utilizes engineering workflows and agent intelligence adapted fr
 5. **Verification is Non-Negotiable**: Every change must compile with `npx tsc --noEmit` and build with `npm run build`.
 
 ## Skill & Rule Routing Protocol
-Always consult [`.agents/rules/agent-skill-routing.md`](file:///c:/Dev/sapling-groove/.agents/rules/agent-skill-routing.md) to determine which rules and skills apply to the current task. **Do not invoke the entire skill library by default.**
+Always consult [`.agents/rules/agent-skill-routing.md`](.agents/rules/agent-skill-routing.md) to determine which rules and skills apply to the current task. **Do not invoke the entire skill library by default.**
 
 For every task:
 1. **Classify** the task domain (UI, State, Audio/Canvas, Refactor, Bug, Security, Config).

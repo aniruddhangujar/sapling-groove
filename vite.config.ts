@@ -68,7 +68,7 @@ function aniDevApiPlugin(apiKey?: string) {
 
         const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '127.0.0.1';
         if (!checkDevRateLimit(clientIp)) {
-          console.warn(`[ANI API DEV] Rate limit exceeded for IP: ${clientIp}`);
+          console.warn('[ANI API DEV] Rate limit exceeded.');
           res.writeHead(429, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
@@ -81,7 +81,7 @@ function aniDevApiPlugin(apiKey?: string) {
         }
 
         const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY;
-        console.log(`[ANI API DEV] Route reached via POST from ${clientIp}.`);
+        console.log('[ANI API DEV] Route reached via POST.');
         console.log(`[ANI API DEV] API key configured: ${key ? 'YES' : 'NO'}`);
 
         if (!key) {

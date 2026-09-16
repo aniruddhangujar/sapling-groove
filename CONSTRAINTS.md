@@ -23,7 +23,7 @@
 - **Lazy Loading**: Non-critical modals (`GoalModal`, `FocusSession`, `AniChat`, `SanctuaryModal`, `AuthModal`) must stay split via React `lazy()` + `Suspense`.
 
 ## 4. Security & Privacy
-- **Secrets Management**: No API keys, tokens, or credentials hardcoded. Use `import.meta.env.VITE_*` exclusively.
+- **Secrets Management**: No API keys, tokens, or credentials hardcoded. Client configuration uses `import.meta.env.VITE_*` exclusively for public parameters; server-side secrets remain strictly in backend environment variables.
 - **Git Hygiene**: `.env*` files are strictly ignored in `.gitignore` (except `.env.example`).
 - **User Storage**: Local state persisted via `storageService` must validate schema shapes before reading into state to avoid crashing from corrupted cache.
 
