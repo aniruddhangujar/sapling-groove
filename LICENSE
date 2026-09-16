@@ -1,26 +1,98 @@
 Copyright (c) 2026 Aniruddha Gujar. All rights reserved.
 
-Sapling Groove is a proprietary software application and design system developed and maintained by Aniruddha Gujar as a personal portfolio and creative showcase.
+Sapling Groove is a proprietary software application, interface, and
+collection of associated creative assets developed and maintained by
+Aniruddha Gujar as a personal portfolio and creative project.
 
-1. PUBLIC PORTFOLIO & EVALUATION ACCESS:
-   This repository is hosted publicly on GitHub for portfolio demonstration, educational review, technical evaluation, and personal study. Viewing the source code, cloning the repository, or inspecting its architecture does not convey any license, title, or interest in or to the software.
+NO LICENSE IS GRANTED TO USE, REPRODUCE, MODIFY, DISTRIBUTE, PUBLICLY
+PERFORM, PUBLICLY DISPLAY, OR CREATE DERIVATIVE WORKS FROM THIS SOFTWARE
+EXCEPT AS EXPRESSLY PERMITTED BY THIS LICENSE OR REQUIRED BY APPLICABLE LAW.
 
-2. RESTRICTIONS ON REUSE & REDISTRIBUTION:
-   Except as expressly permitted by applicable law (such as fair use for personal study), you may NOT:
-   a. Reproduce, distribute, publish, sublicense, loan, or lease the source code or binary builds.
-   b. Repackage, rebrand, resell, or publicly host derivative versions of this application.
-   c. Deploy this software or significant parts thereof as a commercial product, SaaS offering, or public service.
-   d. Claim authorship, ownership, or affiliation with the creator without express written consent.
+1. PUBLIC PORTFOLIO & EVALUATION ACCESS
 
-3. BRANDING & TRADEMARK-LIKE ELEMENTS:
-   "Sapling Groove" and its distinctive product features and interface designations—including "Grove", "Chronos", "Groove", "Ani", "Sanctuary", and "Observatory"—are part of the project's original identity and branding. They are not licensed for reuse as another product's branding, marketing, or naming.
+This repository is publicly hosted on GitHub for portfolio demonstration,
+technical evaluation, educational review, and inspection of the project's
+architecture and implementation.
 
-4. CREATIVE ASSETS & ORIGINAL DESIGNS:
-   All original procedural voxel tree algorithms, 3D procedural rendering logic, custom botanical illustrations, cards, icons, synthesized soundscape engines, and conversational architectures are proprietary creative works. No permission is granted to extract or repurpose these assets for external projects.
+Viewing the repository, cloning it, or downloading its contents does not
+transfer ownership or grant a license to reuse, redistribute, modify,
+repackage, deploy, or commercialize the software.
 
-5. THIRD-PARTY DEPENDENCIES & FONTS:
-   Open-source dependencies (e.g., React, Three.js, Tailwind CSS) and open-source fonts (Orbitron, Press Start 2P, Space Mono, VT323) utilized by this application remain subject to their respective open-source licenses.
+2. RESTRICTIONS ON REUSE & REDISTRIBUTION
 
-6. PERMISSIONS & INQUIRIES:
-   For questions regarding permissions, evaluation, licensing, or portfolio inquiries, please contact:
-   https://github.com/aniruddhangujar
+Except as expressly permitted by applicable law, you may NOT:
+
+a. Reproduce, distribute, publish, sublicense, loan, lease, or redistribute
+   the source code or compiled/binary versions of the software.
+
+b. Repackage, rebrand, resell, or publicly host the software or derivative
+   versions of it.
+
+c. Deploy the software, or substantial portions of its implementation, as
+   a commercial product, SaaS offering, template, public service, or other
+   independently distributed software product.
+
+d. Create or distribute derivative works based substantially on the
+   software or its proprietary creative assets.
+
+e. Claim authorship, ownership, endorsement, or affiliation with the
+   creator in connection with the software without express written
+   permission.
+
+3. BRANDING & PROJECT IDENTITY
+
+"Sapling Groove" and the project's distinctive product names and interface
+designations, including "Grove", "Chronos", "Groove", "Ani", "Sanctuary",
+and "Observatory", form part of the project's identity and branding.
+
+No permission is granted to use these names, branding elements, or distinctive
+product identity to represent, market, or name another software product or
+service.
+
+4. CREATIVE ASSETS & ORIGINAL IMPLEMENTATION
+
+Original Sapling Groove creative and technical works include, among other
+things:
+
+- procedural voxel tree algorithms and rendering systems
+- original 3D procedural rendering logic
+- custom botanical artwork and illustrations
+- original interface graphics, icons, and visual assets
+- procedural soundscape and audio synthesis systems
+- original interaction designs
+- conversational/interface architectures
+- other original creative works contained within the repository
+
+These works remain protected by applicable copyright law and are not licensed
+for extraction, repurposing, redistribution, or use in external projects
+without express written permission.
+
+5. THIRD-PARTY SOFTWARE & ASSETS
+
+Third-party software, libraries, frameworks, fonts, and other materials
+included in or used by this project remain subject to their respective
+licenses and copyright terms.
+
+This includes, where applicable, open-source dependencies such as React,
+Three.js, Tailwind CSS, and third-party fonts including Orbitron, Press Start
+2P, Space Mono, and VT323.
+
+Nothing in this license attempts to restrict rights granted by the
+independent licenses governing third-party materials.
+
+6. PERMISSIONS & LICENSING
+
+Requests for permission to reuse, license, redistribute, commercialize, or
+otherwise use proprietary Sapling Groove materials should be directed to the
+copyright holder.
+
+GitHub:
+https://github.com/aniruddhangujar
+
+7. NO WARRANTY
+
+The software is provided for portfolio and evaluation purposes "as is",
+without warranties of any kind, to the extent permitted by applicable law.
+
+Copyright (c) 2026 Aniruddha Gujar.
+All rights reserved.
