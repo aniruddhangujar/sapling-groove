@@ -75,18 +75,23 @@ self.addEventListener('fetch', (event) => {
   // Static assets (CSS, JS, Fonts, Images): Stale-While-Revalidate
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && (networkResponse.type === 'basic' || networkResponse.type === 'cors')) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
+      const fetchPromise = fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && (networkResponse.type === 'basic' || networkResponse.type === 'cors')) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          if (cachedResponse) return cachedResponse;
+          return new Response('Asset temporarily unavailable offline', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain' }
           });
-        }
-        return networkResponse;
-      }).catch(() => {
-        // Network failure, return cached if available
-        return cachedResponse;
-      });
+        });
 
       return cachedResponse || fetchPromise;
     })

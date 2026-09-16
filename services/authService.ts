@@ -134,6 +134,12 @@ export class AuthService {
     if (this.hasProcessedRedirect) return null;
     this.hasProcessedRedirect = true;
 
+    // Only invoke getRedirectResult if an OAuth redirect was actually initiated
+    // This prevents unnecessary storage lookups and delays on standard startup
+    if (!this.isAuthRedirectInProgress()) {
+      return null;
+    }
+
     try {
       const redirectResult = await getRedirectResult(auth);
       try {
