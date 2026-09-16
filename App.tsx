@@ -1162,7 +1162,7 @@ const SaplingAppContent: React.FC = () => {
   );
 
   return (
-    <div className="h-screen h-[100dvh] flex flex-col max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto border-x-2 border-green-950/30 bg-[#040a04] relative shadow-2xl overflow-hidden">
+    <div className="app-shell-viewport flex flex-col w-full max-w-2xl lg:max-w-5xl xl:max-w-6xl mx-auto border-x-2 border-green-950/30 bg-[#040a04] relative shadow-2xl overflow-hidden">
       <header className="px-3 py-2 sm:px-6 sm:py-4 md:px-8 md:py-5 border-b-2 border-green-950/20 bg-[#040a04]/95 backdrop-blur-md sticky top-0 z-[60] pt-safe shrink-0">
         {/* Responsive Container: 2-tier on mobile (< sm:), single row on sm: and up */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
@@ -1339,7 +1339,7 @@ const SaplingAppContent: React.FC = () => {
       <nav 
         ref={navRef}
         aria-label="Main navigation" 
-        className="shrink-0 sticky bottom-0 z-[60] border-t-2 border-green-900/50 bg-[#040a04] px-1 pt-1.5 pb-safe-nav xs:px-2 xs:pt-2 sm:px-3 sm:py-2.5 md:px-4 md:py-3 grid grid-cols-5 gap-0.5 xs:gap-1 sm:gap-2 shadow-[0_-10px_25px_rgba(0,0,0,0.8)]"
+        className="shrink-0 z-[60] border-t-2 border-green-900/50 bg-[#040a04] px-1 pt-1.5 pb-safe-nav xs:px-2 xs:pt-2 sm:px-3 sm:py-2.5 md:px-4 md:py-3 grid grid-cols-5 gap-0.5 xs:gap-1 sm:gap-2 shadow-[0_-10px_25px_rgba(0,0,0,0.8)]"
       >
         {[
           { id: 'grove', label: 'GROVE', icon: <path d="M7 14l5-5 5 5M12 9v12 M5 5h14v14H5z" stroke="currentColor" fill="none" strokeWidth="2.5" strokeLinecap="round" /> },
