@@ -16,6 +16,7 @@ interface DashboardProps {
   profile: UserProfile;
   onStartFocus: (goalId?: string, mode?: FocusMode) => void;
   onNavigateTab: (tab: AppTab) => void;
+  onOpenCommunity?: (tab?: 'feedback' | 'support' | 'contact') => void;
 }
 
 // Botanical species glyph symbols for cyber-organic visual identification
@@ -33,7 +34,7 @@ const SPECIES_ICONS: Record<string, string> = {
   [TreeType.BONSAI]: '🪴'
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ profile, onStartFocus, onNavigateTab }) => {
+const Dashboard: React.FC<DashboardProps> = ({ profile, onStartFocus, onNavigateTab, onOpenCommunity }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [hoveredRhythmDay, setHoveredRhythmDay] = useState<string | null>(null);
 
@@ -576,6 +577,52 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, onStartFocus, onNavigate
           </div>
         </section>
       )}
+
+      {/* 7. COMMUNITY & STEWARDSHIP FOOTER (In-App Access for Mobile & Desktop) */}
+      <section aria-label="Community and Support" className="p-4 sm:p-5 border border-emerald-950/60 bg-[#040a04] rounded-lg space-y-3 mt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-950/50 pb-2.5">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-sm bg-emerald-500 inline-block" />
+            <span className="pixel-font text-[9px] sm:text-[10px] text-emerald-400 uppercase tracking-widest font-bold">
+              SAPLING // COMMUNITY & STEWARDSHIP
+            </span>
+          </div>
+          <span className="pixel-font text-[7px] text-zinc-500 uppercase tracking-wider">
+            CORE EXPERIENCE IS FREE
+          </span>
+        </div>
+        
+        <p className="text-xs text-zinc-400 leading-relaxed font-editorial">
+          "Sapling is cultivated as a distraction-free sanctuary for students and thinkers. Your feedback and support nourish the canopy."
+        </p>
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => onOpenCommunity?.('feedback')}
+            className="px-3 py-2 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-700/50 text-emerald-300 pixel-font text-[8px] sm:text-[9px] uppercase tracking-wider rounded transition-all min-h-[36px] active:scale-95 flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>📝</span>
+            <span>FIELD REPORT</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenCommunity?.('support')}
+            className="px-3 py-2 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-700/50 text-emerald-300 pixel-font text-[8px] sm:text-[9px] uppercase tracking-wider rounded transition-all min-h-[36px] active:scale-95 flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>🌱</span>
+            <span>SUPPORT THE GROVE</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenCommunity?.('contact')}
+            className="px-3 py-2 bg-black/40 hover:bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 pixel-font text-[8px] sm:text-[9px] uppercase tracking-wider rounded transition-all min-h-[36px] active:scale-95 flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>✉</span>
+            <span>CONTACT</span>
+          </button>
+        </div>
+      </section>
 
     </div>
   );

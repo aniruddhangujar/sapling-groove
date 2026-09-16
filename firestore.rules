@@ -75,5 +75,38 @@ service cloud.firestore {
           && (!('soundscape' in request.resource.data) || request.resource.data.soundscape in ['zen', 'nature', 'rain', 'none']);
       }
     }
+
+    // Community Feedback / Field Reports
+    // CRITICAL: Reading, updating, and deleting are completely denied from all clients.
+    // Client write is strictly schema-constrained as a defense-in-depth boundary.
+    match /feedback/{feedbackId} {
+      allow read, update, delete: if false;
+
+      allow create: if request.resource.data.keys().hasOnly([
+        'id', 'category', 'message', 'contactEmail', 'appVersion', 
+        'browser', 'deviceCategory', 'currentRoute', 'createdAt', 
+        'userId', 'isGuest'
+      ])
+      && request.resource.data.id is string
+      && request.resource.data.id.size() <= 64
+      && request.resource.data.category in ['bug', 'feature', 'ux', 'appreciation', 'other']
+      && request.resource.data.message is string
+      && request.resource.data.message.size() >= 3
+      && request.resource.data.message.size() <= 2000
+      && (!('contactEmail' in request.resource.data) || (request.resource.data.contactEmail is string && request.resource.data.contactEmail.size() <= 100))
+      && request.resource.data.appVersion is string
+      && request.resource.data.appVersion.size() <= 20
+      && request.resource.data.browser is string
+      && request.resource.data.browser.size() <= 100
+      && request.resource.data.deviceCategory in ['mobile', 'tablet', 'desktop']
+      && request.resource.data.currentRoute is string
+      && request.resource.data.currentRoute.size() <= 100
+      && request.resource.data.createdAt is number
+      && request.resource.data.isGuest is bool
+      && (
+        (request.auth != null && request.resource.data.userId == request.auth.uid && request.resource.data.isGuest == false) ||
+        (request.resource.data.userId == null && request.resource.data.isGuest == true)
+      );
+    }
   }
 }

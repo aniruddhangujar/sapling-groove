@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 interface Props {
   onEnterApp: (options?: { openNewSeed?: boolean; presetTree?: TreeType; presetName?: string }) => void;
   onOpenAuth: () => void;
+  onOpenCommunity?: (tab?: 'feedback' | 'support' | 'contact') => void;
 }
 
 const SPECIMENS: IntentSpecimen[] = [
@@ -309,7 +310,7 @@ const InViewGroveCanvas: React.FC<{ goal: SaplingGoal }> = ({ goal }) => {
   );
 };
 
-const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
+const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth, onOpenCommunity }) => {
   const { user, isAuthenticated } = useAuth();
   const [selectedSpecimen, setSelectedSpecimen] = useState<IntentSpecimen>(SPECIMENS[0]);
   const [activeStageIndex, setActiveStageIndex] = useState(2); // Start at Sapling stage
@@ -1256,10 +1257,94 @@ const LandingPage: React.FC<Props> = ({ onEnterApp, onOpenAuth }) => {
         </div>
       </section>
 
-      {/* FOOTER — Dignified Botanical Colophon */}
-      <footer className="py-8 px-4 sm:px-8 border-t border-green-950/80 bg-[#020502] text-center font-display text-[8px] sm:text-[9px] text-green-600/80 uppercase tracking-widest space-y-2">
-        <div>SAPLING // CYBER-BOTANICAL FOCUS PROTOCOL</div>
-        <div>LOCAL-FIRST • ZERO TRACKERS • WEB & PWA</div>
+      {/* FOOTER — 3-Column Community, Project, & Support Colophon */}
+      <footer className="border-t border-green-950/80 bg-[#020502] text-zinc-400">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-12 sm:py-16 grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
+          
+          {/* Column 1: Project Identity */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <span className="font-orbitron text-sm tracking-widest text-white font-bold uppercase">
+                SAPLING GROOVE
+              </span>
+            </div>
+            <p className="font-editorial text-xs sm:text-sm text-zinc-400 leading-relaxed">
+              A mindful cyber-botanical productivity environment. Cultivate focus, watch your procedural canopies evolve, and anchor your daily intentions in stillness.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1 font-display text-[9px] uppercase tracking-wider text-green-500">
+              <a href="#manifesto" className="hover:text-green-300 transition-colors">[ MANIFESTO ]</a>
+              <span>•</span>
+              <a href="#ecosystem" className="hover:text-green-300 transition-colors">[ GROVE ]</a>
+              <span>•</span>
+              <a 
+                href="https://github.com/aniruddhangujar/sapling-groove" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hover:text-green-300 transition-colors"
+              >
+                [ GITHUB ↗ ]
+              </a>
+            </div>
+          </div>
+
+          {/* Column 2: Community & Field Reports */}
+          <div className="space-y-4">
+            <div className="font-display text-[10px] text-emerald-400 uppercase tracking-widest font-bold flex items-center gap-2">
+              <span>COMMUNITY // FIELD REPORT</span>
+            </div>
+            <p className="text-xs text-zinc-400 leading-relaxed font-editorial">
+              Notice a defect, have a feature vision, or wish to share your experience? Field reports are triaged directly by the creator.
+            </p>
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => onOpenCommunity?.('feedback')}
+                className="w-full text-left px-3 py-2 bg-[#051105] hover:bg-[#0c240c] border border-green-900/60 hover:border-green-500/60 rounded font-display text-[10px] text-emerald-300 uppercase tracking-wider transition-all min-h-[36px] flex items-center justify-between group cursor-pointer"
+              >
+                <span>[ 📝 LEAVE A FIELD REPORT ]</span>
+                <span className="text-zinc-600 group-hover:text-emerald-400">→</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenCommunity?.('contact')}
+                className="w-full text-left px-3 py-2 bg-[#051105] hover:bg-[#0c240c] border border-green-900/60 hover:border-green-500/60 rounded font-display text-[10px] text-zinc-400 hover:text-zinc-200 uppercase tracking-wider transition-all min-h-[36px] flex items-center justify-between group cursor-pointer"
+              >
+                <span>[ ✉ CONTACT & CHANNELS ]</span>
+                <span className="text-zinc-600 group-hover:text-emerald-400">→</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Column 3: Support the Grove */}
+          <div className="space-y-4">
+            <div className="font-display text-[10px] text-emerald-400 uppercase tracking-widest font-bold flex items-center gap-2">
+              <span>SUPPORT THE GROVE</span>
+            </div>
+            <div className="bg-[#051105] border border-emerald-950/80 p-3 rounded space-y-2">
+              <p className="font-display text-[10px] text-emerald-300 font-bold uppercase tracking-wider">
+                Sapling's core experience is free to use.
+              </p>
+              <p className="text-[11px] text-zinc-400 leading-relaxed font-editorial">
+                Built for deep study and undistracted thought. Voluntary donations help cover serverless compute, soundscape synthesis, and continuous maintenance.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenCommunity?.('support')}
+              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-black font-display font-bold text-[10px] tracking-widest uppercase rounded shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>[ SUPPORT VIA GITHUB SPONSORS ↗ ]</span>
+            </button>
+          </div>
+
+        </div>
+
+        {/* Bottom Colophon Strip */}
+        <div className="border-t border-green-950/80 py-6 px-4 sm:px-8 text-center font-display text-[8px] sm:text-[9px] text-green-600/80 uppercase tracking-widest space-y-1.5">
+          <div>SAPLING // CYBER-BOTANICAL FOCUS PROTOCOL • v1.1.0</div>
+          <div>LOCAL-FIRST • ZERO TRACKERS • WEB & PWA</div>
+        </div>
       </footer>
 
       {/* Interactive Tactical Instrument Drawer */}

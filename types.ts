@@ -155,3 +155,41 @@ export interface IntentSpecimen {
   iconName: string;
   philosophy: string;
 }
+
+// ===== COMMUNITY & FIELD REPORT TYPES =====
+export type FeedbackCategory = 'bug' | 'feature' | 'ux' | 'appreciation' | 'other';
+
+export interface FieldReportInput {
+  category: FeedbackCategory;
+  message: string;
+  contactEmail?: string;
+  hp_bot_trap?: string; // Honeypot field for bot deterrence
+  appVersion?: string;
+  browser?: string;
+  deviceCategory?: 'mobile' | 'tablet' | 'desktop';
+  currentRoute?: string;
+  userId?: string | null;
+  isGuest?: boolean;
+}
+
+export interface FieldReport {
+  id: string;
+  category: FeedbackCategory;
+  message: string;
+  contactEmail?: string;
+  appVersion: string;
+  browser: string;
+  deviceCategory: 'mobile' | 'tablet' | 'desktop';
+  currentRoute: string;
+  createdAt: number;
+  userId?: string | null;
+  isGuest: boolean;
+}
+
+export interface FeedbackApiResponse {
+  success: boolean;
+  reportId?: string;
+  message?: string;
+  error?: string;
+  code?: 'RATE_LIMITED' | 'INVALID_PAYLOAD' | 'BOT_DETECTED' | 'PAYLOAD_TOO_LARGE' | 'INTERNAL_ERROR' | 'NETWORK_ERROR';
+}

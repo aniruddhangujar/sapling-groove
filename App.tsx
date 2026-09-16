@@ -16,6 +16,7 @@ const AniChat = lazy(() => import('./components/AniChat'));
 const SanctuaryModal = lazy(() => import('./components/SanctuaryModal'));
 const AuthModal = lazy(() => import('./components/AuthModal'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
+const CommunityModal = lazy(() => import('./components/CommunityModal').then(m => ({ default: m.CommunityModal })));
 import GroveTour, { TourStepId } from './components/GroveTour';
 
 const SaplingLogo: React.FC = () => (
@@ -101,6 +102,8 @@ const SaplingAppContent: React.FC = () => {
   });
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showSanctuaryModal, setShowSanctuaryModal] = useState(false);
+  const [showCommunityModal, setShowCommunityModal] = useState(false);
+  const [communityModalTab, setCommunityModalTab] = useState<'feedback' | 'support' | 'contact'>('feedback');
   const [activeSessionGoal, setActiveSessionGoal] = useState<SaplingGoal | null | 'pomodoro'>(null);
   const [sessionMode, setSessionMode] = useState<FocusMode>('chronos');
   const [sessionDurationMinutes, setSessionDurationMinutes] = useState<number | undefined>(undefined);
@@ -462,6 +465,11 @@ const SaplingAppContent: React.FC = () => {
     );
   }
 
+  const handleOpenCommunity = (tab: 'feedback' | 'support' | 'contact' = 'feedback') => {
+    setCommunityModalTab(tab);
+    setShowCommunityModal(true);
+  };
+
   // If in Public Website Mode, render the Landing Page
   if (viewMode === 'landing') {
     return (
@@ -469,12 +477,24 @@ const SaplingAppContent: React.FC = () => {
         <LandingPage 
           onEnterApp={navigateToApp} 
           onOpenAuth={() => setShowAuthModal(true)} 
+          onOpenCommunity={handleOpenCommunity}
         />
         {showAuthModal && (
           <Suspense fallback={null}>
             <AuthModal 
               onClose={() => setShowAuthModal(false)} 
               onSuccess={() => navigateToApp()} 
+            />
+          </Suspense>
+        )}
+        {showCommunityModal && (
+          <Suspense fallback={null}>
+            <CommunityModal
+              isOpen={showCommunityModal}
+              onClose={() => setShowCommunityModal(false)}
+              initialTab={communityModalTab}
+              currentRoute="/#landing"
+              user={user}
             />
           </Suspense>
         )}
@@ -522,6 +542,14 @@ const SaplingAppContent: React.FC = () => {
                   className="pixel-font text-[6.5px] xs:text-[7px] text-zinc-500 hover:text-green-300 border border-green-950/60 bg-[#051105] px-1 py-0.5 ml-0.5 transition-colors cursor-pointer"
                 >
                   ? GUIDE
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenCommunity('feedback')}
+                  title="Community & Field Reports"
+                  className="hidden sm:inline-flex pixel-font text-[6.5px] xs:text-[7px] text-zinc-500 hover:text-emerald-300 border border-emerald-950/60 bg-[#051105] px-1 py-0.5 ml-0.5 transition-colors cursor-pointer"
+                >
+                  COMMUNITY
                 </button>
               </div>
               <p className="text-green-400/80 text-[7px] sm:text-[8px] uppercase tracking-widest font-display font-medium">
@@ -1157,6 +1185,7 @@ const SaplingAppContent: React.FC = () => {
           startUtilityRitual(25);
         }}
         onNavigateTab={handleTabChange}
+        onOpenCommunity={handleOpenCommunity}
       />
     </Suspense>
   );
@@ -1394,12 +1423,21 @@ const SaplingAppContent: React.FC = () => {
         {showSanctuaryModal && (
           <SanctuaryModal 
             onClose={() => setShowSanctuaryModal(false)} 
-            onUnlock={() => setProfile(prev => ({ ...prev, isPremium: true }))} 
+            onOpenCommunity={handleOpenCommunity}
           />
         )}
         {showAuthModal && (
           <AuthModal 
             onClose={() => setShowAuthModal(false)} 
+          />
+        )}
+        {showCommunityModal && (
+          <CommunityModal
+            isOpen={showCommunityModal}
+            onClose={() => setShowCommunityModal(false)}
+            initialTab={communityModalTab}
+            currentRoute={`/#${activeTab}`}
+            user={user}
           />
         )}
         

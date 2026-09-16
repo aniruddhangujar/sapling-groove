@@ -357,6 +357,99 @@ When asked about habits, focus velocity, or progress, analyze their real Grove c
   };
 }
 
+function feedbackDevApiPlugin() {
+  const FEEDBACK_RATE_LIMIT_MS = 10 * 60 * 1000;
+  const FEEDBACK_MAX_REQUESTS = 5;
+  const feedbackIpHistory = new Map<string, number[]>();
+
+  return {
+    name: 'feedback-dev-api',
+    configureServer(server: any) {
+      server.middlewares.use('/api/feedback', async (req: any, res: any) => {
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204, {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          });
+          res.end();
+          return;
+        }
+
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Method not allowed' }));
+          return;
+        }
+
+        const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '127.0.0.1';
+        const now = Date.now();
+        const timestamps = (feedbackIpHistory.get(clientIp) || []).filter(ts => now - ts < FEEDBACK_RATE_LIMIT_MS);
+        if (timestamps.length >= FEEDBACK_MAX_REQUESTS) {
+          feedbackIpHistory.set(clientIp, timestamps);
+          res.writeHead(429, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: false,
+            error: 'The grove is receiving many observations. Please wait a few moments before submitting another report.',
+            code: 'RATE_LIMITED'
+          }));
+          return;
+        }
+        timestamps.push(now);
+        feedbackIpHistory.set(clientIp, timestamps);
+
+        let rawBody = '';
+        req.on('data', (chunk: any) => {
+          rawBody += chunk;
+          if (rawBody.length > 10240) {
+            res.writeHead(413, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'Payload exceeds maximum size of 10KB.', code: 'PAYLOAD_TOO_LARGE' }));
+            req.destroy();
+          }
+        });
+
+        req.on('end', () => {
+          try {
+            const body = JSON.parse(rawBody || '{}');
+            if (body.hp_bot_trap && typeof body.hp_bot_trap === 'string' && body.hp_bot_trap.trim().length > 0) {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, reportId: 'dev_ack_' + Date.now().toString(36) }));
+              return;
+            }
+
+            const category = typeof body.category === 'string' ? body.category.toLowerCase().trim() : '';
+            if (!['bug', 'feature', 'ux', 'appreciation', 'other'].includes(category)) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: false, error: 'Invalid category.', code: 'INVALID_PAYLOAD' }));
+              return;
+            }
+
+            const msg = typeof body.message === 'string' ? body.message.trim() : '';
+            if (msg.length < 3 || msg.length > 2000) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: false, error: 'Message must be between 3 and 2,000 characters.', code: 'INVALID_PAYLOAD' }));
+              return;
+            }
+
+            const reportId = 'dev_rep_' + Date.now().toString(36);
+            console.log('[Feedback DEV API] Report accepted:', { reportId, category, time: Date.now() });
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: true,
+              reportId,
+              message: 'Field report received. Thanks for helping the Grove grow.'
+            }));
+          } catch {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'Malformed JSON payload.' }));
+          }
+        });
+      });
+    }
+  };
+}
+
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     const geminiKey = env.GEMINI_API_KEY || env.API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
@@ -369,7 +462,8 @@ export default defineConfig(({ mode }) => {
       plugins: [
         tailwindcss(),
         react(),
-        aniDevApiPlugin(geminiKey)
+        aniDevApiPlugin(geminiKey),
+        feedbackDevApiPlugin()
       ],
       resolve: {
         alias: {
