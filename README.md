@@ -226,27 +226,64 @@ The aesthetic formula balances **70% botanical calm and 30% retro-futuristic tec
 
 ## ✦ Visual Showcase
 
+These captures show the application as it actually runs in the browser; the static artwork below is supplementary project visual material.
+
+### The Living World
+![Sapling Groove landing page with live 3D cyber-botanical environment](assets/screenshots/screenshot-landing-3d.png)
+
+### The Botanical Grove
+![Sapling Groove Grove showing a procedural voxel tree and vitality tracking](assets/screenshots/screenshot-grove-specimen.png)
+
+### Focus Rituals
 <div align="center">
   <table border="0">
     <tr>
       <td width="50%" align="center">
-        <img src="assets/cards/card-grove.jpg" width="100%" style="border-radius: 8px;" />
-        <br /><em>The Botanical Grove Sanctuary</em>
+        <img src="assets/screenshots/screenshot-chronos-active.png" alt="Chronos: Structured Circular Countdown Ritual with active tree growth" width="100%" />
+        <br /><em>Chronos: Structured Circular Countdown Ritual</em>
       </td>
       <td width="50%" align="center">
-        <img src="assets/cards/card-chronos.jpg" width="100%" style="border-radius: 8px;" />
-        <br /><em>Circular Chronos Focus Rituals</em>
+        <img src="assets/screenshots/screenshot-groove-flow.png" alt="Groove: Open-Ended Flow State Practice with free-form growth" width="100%" />
+        <br /><em>Groove: Open-Ended Flow State Practice</em>
       </td>
     </tr>
+  </table>
+</div>
+
+### Focus Observatory
+![Sapling Groove Focus Observatory showing deterministic rhythm analytics and attention density field](assets/screenshots/screenshot-dashboard.png)
+
+### Ani
+![Ani AI Focus Architect conversational drawer with structured intent action cards](assets/screenshots/screenshot-ani-drawer.png)
+
+### Mobile Experience
+<div align="center">
+  <table border="0">
     <tr>
       <td width="50%" align="center">
-        <img src="assets/cards/card-groove.jpg" width="100%" style="border-radius: 8px;" />
-        <br /><em>Open-Ended Groove Flow State</em>
+        <img src="assets/screenshots/screenshot-mobile-grove.png" alt="Sapling Groove mobile sanctuary view with 100svh viewport and thumb-zone navigation" width="85%" />
+        <br /><em>Mobile Sanctuary HUD (100svh Viewport)</em>
       </td>
       <td width="50%" align="center">
-        <img src="assets/cards/card-logs.jpg" width="100%" style="border-radius: 8px;" />
-        <br /><em>Focus Observatory & Attention Fields</em>
+        <img src="assets/screenshots/screenshot-mobile-ritual.png" alt="Sapling Groove mobile active focus ritual with compact timer HUD and safe-area margins" width="85%" />
+        <br /><em>Mobile Ritual Timer & Safe-Area Clearance</em>
       </td>
+    </tr>
+  </table>
+</div>
+
+### Supporting Visuals
+<div align="center">
+  <table border="0">
+    <tr>
+      <td width="33%" align="center"><img src="assets/cards/card-grove.jpg" alt="The Botanical Grove Sanctuary Card" width="100%" /><br /><em>The Grove</em></td>
+      <td width="33%" align="center"><img src="assets/cards/card-chronos.jpg" alt="Chronos Focus Ritual Card" width="100%" /><br /><em>Chronos</em></td>
+      <td width="33%" align="center"><img src="assets/cards/card-groove.jpg" alt="Groove Flow State Card" width="100%" /><br /><em>Groove</em></td>
+    </tr>
+    <tr>
+      <td width="33%" align="center"><img src="assets/cards/card-pomo.jpg" alt="Pomodoro Interval Sprints Card" width="100%" /><br /><em>Pomodoro</em></td>
+      <td width="33%" align="center"><img src="assets/cards/card-logs.jpg" alt="Focus Observatory Card" width="100%" /><br /><em>Observatory</em></td>
+      <td width="33%" align="center"><img src="assets/cards/card-ani.jpg" alt="Ani Focus Companion Card" width="100%" /><br /><em>Ani</em></td>
     </tr>
   </table>
 </div>
